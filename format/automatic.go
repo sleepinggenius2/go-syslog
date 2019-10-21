@@ -24,10 +24,9 @@ import (
 type Automatic struct{}
 
 const (
-	detectedUnknown = iota
 	detectedRFC3164 = iota
-	detectedRFC5424 = iota
-	detectedRFC6587 = iota
+	detectedRFC5424
+	detectedRFC6587
 )
 
 /*

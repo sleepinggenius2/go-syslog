@@ -141,7 +141,7 @@ func (s *Rfc5424TestSuite) TestParser_Truncated(c *C) {
 	msg := "<165>1 2003-08-24T05:14:15.000003-07:00 192.0.2.1 myproc 8710 - - %% It's time to make the do-nuts."
 	for i := range msg {
 		p := NewParser([]byte(msg[:i]))
-		p.Parse()
+		c.Assert(p.Parse(), IsNil)
 	}
 }
 

@@ -27,21 +27,36 @@ func (s *ServerSuite) TestTailFile(c *C) {
 	server := NewServer()
 	server.SetFormat(RFC3164)
 	server.SetHandler(handler)
-	server.ListenUDP("0.0.0.0:5141")
-	server.ListenTCP("0.0.0.0:5141")
+	err := server.ListenUDP("0.0.0.0:5141")
+	if err != nil {
+		panic(err)
+	}
+	err = server.ListenTCP("0.0.0.0:5141")
+	if err != nil {
+		panic(err)
+	}
 
 	go func(server *Server) {
 		time.Sleep(100 * time.Millisecond)
 
 		serverAddr, _ := net.ResolveUDPAddr("udp", "localhost:5141")
 		con, _ := net.DialUDP("udp", nil, serverAddr)
-		con.Write([]byte(exampleSyslog))
+		_, err = con.Write([]byte(exampleSyslog))
+		if err != nil {
+			panic(err)
+		}
 		time.Sleep(100 * time.Millisecond)
 
-		server.Kill()
+		err = server.Kill()
+		if err != nil {
+			panic(err)
+		}
 	}(server)
 
-	server.Boot()
+	err = server.Boot()
+	if err != nil {
+		panic(err)
+	}
 	server.Wait()
 
 	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
@@ -130,7 +145,10 @@ func (s *ServerSuite) TestConnectionUDPKill(c *C) {
 	server.SetHandler(handler)
 	con := ConnMock{ReadData: []byte(exampleSyslog)}
 	server.goScanConnection(&con)
-	server.Kill()
+	err := server.Kill()
+	if err != nil {
+		panic(err)
+	}
 	server.Wait()
 	c.Check(con.isClosed, Equals, true)
 }
@@ -310,8 +328,14 @@ func (s *ServerSuite) TestUDPRace(c *C) {
 	server.SetFormat(Automatic)
 	server.SetHandler(handler)
 	server.SetTimeout(10)
-	server.ListenUDP("127.0.0.1:0")
-	server.Boot()
+	err := server.ListenUDP("127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
+	err = server.Boot()
+	if err != nil {
+		panic(err)
+	}
 	conn, err := net.Dial("udp", server.connections[0].LocalAddr().String())
 	c.Assert(err, IsNil)
 	_, err = conn.Write([]byte(exampleSyslog + "1"))
@@ -331,8 +355,14 @@ func (s *ServerSuite) TestTCPRace(c *C) {
 	server.SetFormat(Automatic)
 	server.SetHandler(handler)
 	server.SetTimeout(10)
-	server.ListenTCP("127.0.0.1:0")
-	server.Boot()
+	err := server.ListenTCP("127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
+	err = server.Boot()
+	if err != nil {
+		panic(err)
+	}
 	conn, err := net.Dial("tcp", server.listeners[0].Addr().String())
 	c.Assert(err, IsNil)
 	_, err = conn.Write([]byte(exampleSyslog + "1\n"))

@@ -17,19 +17,19 @@ const (
 )
 
 var (
-	ErrYearInvalid       = &syslogparser.ParserError{"Invalid year in timestamp"}
-	ErrMonthInvalid      = &syslogparser.ParserError{"Invalid month in timestamp"}
-	ErrDayInvalid        = &syslogparser.ParserError{"Invalid day in timestamp"}
-	ErrHourInvalid       = &syslogparser.ParserError{"Invalid hour in timestamp"}
-	ErrMinuteInvalid     = &syslogparser.ParserError{"Invalid minute in timestamp"}
-	ErrSecondInvalid     = &syslogparser.ParserError{"Invalid second in timestamp"}
-	ErrSecFracInvalid    = &syslogparser.ParserError{"Invalid fraction of second in timestamp"}
-	ErrTimeZoneInvalid   = &syslogparser.ParserError{"Invalid time zone in timestamp"}
-	ErrInvalidTimeFormat = &syslogparser.ParserError{"Invalid time format"}
-	ErrInvalidAppName    = &syslogparser.ParserError{"Invalid app name"}
-	ErrInvalidProcId     = &syslogparser.ParserError{"Invalid proc ID"}
-	ErrInvalidMsgId      = &syslogparser.ParserError{"Invalid msg ID"}
-	ErrNoStructuredData  = &syslogparser.ParserError{"No structured data"}
+	ErrYearInvalid       = &syslogparser.ParserError{ErrorString: "Invalid year in timestamp"}
+	ErrMonthInvalid      = &syslogparser.ParserError{ErrorString: "Invalid month in timestamp"}
+	ErrDayInvalid        = &syslogparser.ParserError{ErrorString: "Invalid day in timestamp"}
+	ErrHourInvalid       = &syslogparser.ParserError{ErrorString: "Invalid hour in timestamp"}
+	ErrMinuteInvalid     = &syslogparser.ParserError{ErrorString: "Invalid minute in timestamp"}
+	ErrSecondInvalid     = &syslogparser.ParserError{ErrorString: "Invalid second in timestamp"}
+	ErrSecFracInvalid    = &syslogparser.ParserError{ErrorString: "Invalid fraction of second in timestamp"}
+	ErrTimeZoneInvalid   = &syslogparser.ParserError{ErrorString: "Invalid time zone in timestamp"}
+	ErrInvalidTimeFormat = &syslogparser.ParserError{ErrorString: "Invalid time format"}
+	ErrInvalidAppName    = &syslogparser.ParserError{ErrorString: "Invalid app name"}
+	ErrInvalidProcId     = &syslogparser.ParserError{ErrorString: "Invalid proc ID"}
+	ErrInvalidMsgId      = &syslogparser.ParserError{ErrorString: "Invalid msg ID"}
+	ErrNoStructuredData  = &syslogparser.ParserError{ErrorString: "No structured data"}
 )
 
 type Parser struct {
@@ -345,7 +345,6 @@ func parseDay(buff []byte, cursor *int, l int) (int, error) {
 
 // FULL-TIME = PARTIAL-TIME TIME-OFFSET
 func parseFullTime(buff []byte, cursor *int, l int) (fullTime, error) {
-	var loc = new(time.Location)
 	var ft fullTime
 
 	pt, err := parsePartialTime(buff, cursor, l)
@@ -353,7 +352,7 @@ func parseFullTime(buff []byte, cursor *int, l int) (fullTime, error) {
 		return ft, err
 	}
 
-	loc, err = parseTimeOffset(buff, cursor, l)
+	loc, err := parseTimeOffset(buff, cursor, l)
 	if err != nil {
 		return ft, err
 	}
@@ -434,7 +433,7 @@ func parseSecFrac(buff []byte, cursor *int, l int) (float64, error) {
 	from := *cursor
 	to := from
 
-	for to = from; to < max; to++ {
+	for ; to < max; to++ {
 		if to >= l {
 			break
 		}
@@ -551,7 +550,7 @@ func parseStructuredData(buff []byte, cursor *int, l int) (string, error) {
 	from := *cursor
 	to := from
 
-	for to = from; to < l; to++ {
+	for ; to < l; to++ {
 		if found {
 			break
 		}

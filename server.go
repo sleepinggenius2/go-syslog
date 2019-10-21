@@ -98,7 +98,10 @@ func (s *Server) ListenUDP(addr string) error {
 	if err != nil {
 		return err
 	}
-	connection.SetReadBuffer(s.datagramReadBufferSize)
+	err = connection.SetReadBuffer(s.datagramReadBufferSize)
+	if err != nil {
+		return err
+	}
 
 	s.connections = append(s.connections, connection)
 	return nil
@@ -115,7 +118,10 @@ func (s *Server) ListenUnixgram(addr string) error {
 	if err != nil {
 		return err
 	}
-	connection.SetReadBuffer(s.datagramReadBufferSize)
+	err = connection.SetReadBuffer(s.datagramReadBufferSize)
+	if err != nil {
+		return err
+	}
 
 	s.connections = append(s.connections, connection)
 	return nil
@@ -242,7 +248,7 @@ loop:
 		default:
 		}
 		if s.readTimeoutMilliseconds > 0 {
-			scanCloser.closer.SetReadDeadline(time.Now().Add(time.Duration(s.readTimeoutMilliseconds) * time.Millisecond))
+			_ = scanCloser.closer.SetReadDeadline(time.Now().Add(time.Duration(s.readTimeoutMilliseconds) * time.Millisecond))
 		}
 		if scanCloser.Scan() {
 			s.parser([]byte(scanCloser.Text()), client, tlsPeer)
