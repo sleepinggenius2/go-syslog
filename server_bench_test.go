@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/mcuadros/go-syslog.v2/format"
+	"gopkg.in/sleepinggenius2/go-syslog.v2/format"
 )
 
 type noopFormatter struct{}
