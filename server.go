@@ -32,7 +32,7 @@ type Server struct {
 	listeners               []net.Listener
 	connections             []net.PacketConn
 	wait                    sync.WaitGroup
-	doneTcp                 chan bool
+	done                    chan struct{}
 	datagramChannel         chan DatagramMessage
 	format                  format.Format
 	handler                 Handler
@@ -133,7 +133,7 @@ func (s *Server) ListenTCP(addr string) error {
 		return err
 	}
 
-	s.doneTcp = make(chan bool)
+	s.done = make(chan struct{})
 	s.listeners = append(s.listeners, listener)
 	return nil
 }
@@ -145,7 +145,7 @@ func (s *Server) ListenTCPTLS(addr string, config *tls.Config) error {
 		return err
 	}
 
-	s.doneTcp = make(chan bool)
+	s.done = make(chan struct{})
 	s.listeners = append(s.listeners, listener)
 	return nil
 }
@@ -181,7 +181,7 @@ func (s *Server) goAcceptConnection(listener net.Listener) {
 	loop:
 		for {
 			select {
-			case <-s.doneTcp:
+			case <-s.done:
 				break loop
 			default:
 			}
@@ -237,7 +237,7 @@ func (s *Server) scan(scanCloser *ScanCloser, client string, tlsPeer string) {
 loop:
 	for {
 		select {
-		case <-s.doneTcp:
+		case <-s.done:
 			break loop
 		default:
 		}
@@ -297,11 +297,8 @@ func (s *Server) Kill() error {
 		}
 	}
 	// Only need to close channel once to broadcast to all waiting
-	if s.doneTcp != nil {
-		close(s.doneTcp)
-	}
-	if s.datagramChannel != nil {
-		close(s.datagramChannel)
+	if s.done != nil {
+		close(s.done)
 	}
 	return nil
 }
@@ -342,7 +339,11 @@ func (s *Server) goReceiveDatagrams(packetconn net.PacketConn) {
 					if addr != nil {
 						address = addr.String()
 					}
-					s.datagramChannel <- DatagramMessage{buf[:n], address}
+					select {
+					case <-s.done:
+						return
+					case s.datagramChannel <- DatagramMessage{buf[:n], address}:
+					}
 				}
 			} else {
 				// there has been an error. Either the server has been killed
@@ -366,6 +367,8 @@ func (s *Server) goParseDatagrams() {
 		defer s.wait.Done()
 		for {
 			select {
+			case <-s.done:
+				return
 			case msg, ok := (<-s.datagramChannel):
 				if !ok {
 					return
