@@ -49,7 +49,7 @@ func (p *Parser) Parse() error {
 	pri, err := p.parsePriority()
 	if err != nil {
 		// RFC3164 sec 4.3.3
-		p.priority = syslogparser.Priority{P: 13, F: syslogparser.Facility{Value: 1}, S: syslogparser.Severity{Value: 5}}
+		p.priority = syslogparser.Priority{P: 13, F: 1, S: 5}
 		p.cursor = tcursor
 		content, err := p.parseContent()
 		p.header.timestamp = time.Now().Round(time.Second)
@@ -91,8 +91,8 @@ func (p *Parser) Parse() error {
 func (p *Parser) Dump() syslogparser.LogParts {
 	return syslogparser.LogParts{
 		"priority":  p.priority.P,
-		"facility":  p.priority.F.Value,
-		"severity":  p.priority.S.Value,
+		"facility":  p.priority.F,
+		"severity":  p.priority.S,
 		"timestamp": p.header.timestamp,
 		"hostname":  p.header.hostname,
 		"app_name":  p.message.tag,

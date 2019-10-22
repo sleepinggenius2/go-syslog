@@ -172,8 +172,8 @@ func (s *Rfc5424TestSuite) TestParseHeader_Valid(c *C) {
 
 	pri := syslogparser.Priority{
 		P: 165,
-		F: syslogparser.Facility{Value: 20},
-		S: syslogparser.Severity{Value: 5},
+		F: 20,
+		S: 5,
 	}
 
 	expected := []header{

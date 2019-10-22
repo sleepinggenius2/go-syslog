@@ -75,8 +75,8 @@ func (s *CommonTestSuite) TestNewPriority(c *C) {
 
 	expected := Priority{
 		P: 165,
-		F: Facility{Value: 20},
-		S: Severity{Value: 5},
+		F: 20,
+		S: 5,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)

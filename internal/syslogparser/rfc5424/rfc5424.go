@@ -107,8 +107,8 @@ func (p *Parser) Parse() error {
 func (p *Parser) Dump() syslogparser.LogParts {
 	return syslogparser.LogParts{
 		"priority":        p.header.priority.P,
-		"facility":        p.header.priority.F.Value,
-		"severity":        p.header.priority.S.Value,
+		"facility":        p.header.priority.F,
+		"severity":        p.header.priority.S,
 		"version":         p.header.version,
 		"timestamp":       p.header.timestamp,
 		"hostname":        p.header.hostname,

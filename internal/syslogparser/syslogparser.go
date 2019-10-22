@@ -44,16 +44,8 @@ type ParserError struct {
 
 type Priority struct {
 	P int
-	F Facility
-	S Severity
-}
-
-type Facility struct {
-	Value int
-}
-
-type Severity struct {
-	Value int
+	F int
+	S int
 }
 
 type LogParts map[string]interface{}
@@ -139,8 +131,8 @@ func newPriority(p int) Priority {
 
 	return Priority{
 		P: p,
-		F: Facility{Value: p / 8},
-		S: Severity{Value: p % 8},
+		F: p / 8,
+		S: p % 8,
 	}
 }
 
