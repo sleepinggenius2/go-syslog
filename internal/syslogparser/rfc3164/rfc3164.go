@@ -90,14 +90,14 @@ func (p *Parser) Parse() error {
 
 func (p *Parser) Dump() syslogparser.LogParts {
 	return syslogparser.LogParts{
-		"timestamp": p.header.timestamp,
-		"hostname":  p.header.hostname,
-		"tag":       p.message.tag,
-		"content":   p.message.content,
-		"pid":       p.message.pid,
 		"priority":  p.priority.P,
 		"facility":  p.priority.F.Value,
 		"severity":  p.priority.S.Value,
+		"timestamp": p.header.timestamp,
+		"hostname":  p.header.hostname,
+		"app_name":  p.message.tag,
+		"proc_id":   p.message.pid,
+		"message":   p.message.content,
 	}
 }
 
@@ -252,7 +252,7 @@ func (p *Parser) parseTag() (string, string, error) {
 			found = true
 			pidFrom = p.cursor + 1
 		}
-		
+
 		if bracketClosed {
 			pid = p.buff[pidFrom:p.cursor]
 		}
