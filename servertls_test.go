@@ -79,6 +79,7 @@ func (s *ServerSuite) TestTLS(c *C) {
 		if _, err := io.WriteString(conn, fmt.Sprintf("%s\n", exampleSyslog)); err != nil {
 			panic(err)
 		}
+		time.Sleep(time.Second)
 		err = server.Kill()
 		if err != nil {
 			panic(err)
@@ -87,8 +88,8 @@ func (s *ServerSuite) TestTLS(c *C) {
 	server.Wait()
 
 	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
-	c.Check(handler.LastLogParts["tag"], Equals, "tag")
-	c.Check(handler.LastLogParts["content"], Equals, "content")
+	c.Check(handler.LastLogParts["app_name"], Equals, "tag")
+	c.Check(handler.LastLogParts["message"], Equals, "content")
 	c.Check(handler.LastLogParts["tls_peer"], Equals, "dummycert1")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
 	c.Check(handler.LastError, IsNil)

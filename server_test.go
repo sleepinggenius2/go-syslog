@@ -8,6 +8,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
+
 	"github.com/sleepinggenius2/go-syslog/format"
 )
 
@@ -60,8 +61,8 @@ func (s *ServerSuite) TestTailFile(c *C) {
 	server.Wait()
 
 	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
-	c.Check(handler.LastLogParts["tag"], Equals, "tag")
-	c.Check(handler.LastLogParts["content"], Equals, "content")
+	c.Check(handler.LastLogParts["app_name"], Equals, "tag")
+	c.Check(handler.LastLogParts["message"], Equals, "content")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -180,8 +181,8 @@ func (s *ServerSuite) TestUDP3164(c *C) {
 	close(server.datagramChannel)
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
-	c.Check(handler.LastLogParts["tag"], Equals, "tag")
-	c.Check(handler.LastLogParts["content"], Equals, "content")
+	c.Check(handler.LastLogParts["app_name"], Equals, "tag")
+	c.Check(handler.LastLogParts["message"], Equals, "content")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -197,8 +198,8 @@ func (s *ServerSuite) TestUDP3164NoTag(c *C) {
 	close(server.datagramChannel)
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "127.0.0.1")
-	c.Check(handler.LastLogParts["tag"], Equals, "")
-	c.Check(handler.LastLogParts["content"], Equals, "INFO     leaving (1) step postscripts")
+	c.Check(handler.LastLogParts["app_name"], Equals, "")
+	c.Check(handler.LastLogParts["message"], Equals, "INFO     leaving (1) step postscripts")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslogNoTSTagHost)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -214,9 +215,9 @@ func (s *ServerSuite) TestUDPAutomatic3164NoPriority(c *C) {
 	close(server.datagramChannel)
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "127.0.0.1")
-	c.Check(handler.LastLogParts["tag"], Equals, "")
+	c.Check(handler.LastLogParts["app_name"], Equals, "")
 	c.Check(handler.LastLogParts["priority"], Equals, 13)
-	c.Check(handler.LastLogParts["content"], Equals, exampleSyslogNoPriority)
+	c.Check(handler.LastLogParts["message"], Equals, exampleSyslogNoPriority)
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslogNoPriority)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -250,8 +251,8 @@ func (s *ServerSuite) TestUDPAutomatic3164(c *C) {
 	close(server.datagramChannel)
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
-	c.Check(handler.LastLogParts["tag"], Equals, "tag")
-	c.Check(handler.LastLogParts["content"], Equals, "content")
+	c.Check(handler.LastLogParts["app_name"], Equals, "tag")
+	c.Check(handler.LastLogParts["message"], Equals, "content")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -285,8 +286,8 @@ func (s *ServerSuite) TestUDPAutomatic3164Plus6587OctetCount(c *C) {
 	close(server.datagramChannel)
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
-	c.Check(handler.LastLogParts["tag"], Equals, "tag")
-	c.Check(handler.LastLogParts["content"], Equals, "content")
+	c.Check(handler.LastLogParts["app_name"], Equals, "tag")
+	c.Check(handler.LastLogParts["message"], Equals, "content")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -318,7 +319,7 @@ func (s *handlerSlow) Handle(logParts format.LogParts, msgLen int64, err error) 
 	if len(s.contents) == 0 {
 		time.Sleep(time.Second)
 	}
-	s.contents = append(s.contents, logParts["content"].(string))
+	s.contents = append(s.contents, logParts["message"].(string))
 	s.handlerCounter.Handle(logParts, msgLen, err)
 }
 

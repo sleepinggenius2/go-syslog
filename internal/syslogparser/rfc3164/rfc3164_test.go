@@ -6,6 +6,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
+
 	"github.com/sleepinggenius2/go-syslog/internal/syslogparser"
 )
 
@@ -45,9 +46,9 @@ func (s *Rfc3164TestSuite) TestParser_Valid(c *C) {
 	expected := syslogparser.LogParts{
 		"timestamp": time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
 		"hostname":  "mymachine",
-		"tag":       "very.large.syslog.message.tag",
-		"pid":       "",
-		"content":   "'su root' failed for lonvick on /dev/pts/8",
+		"app_name":  "very.large.syslog.message.tag",
+		"proc_id":   "",
+		"message":   "'su root' failed for lonvick on /dev/pts/8",
 		"priority":  34,
 		"facility":  4,
 		"severity":  2,
@@ -78,9 +79,9 @@ func (s *Rfc3164TestSuite) TestParser_ValidNoTag(c *C) {
 	expected := syslogparser.LogParts{
 		"timestamp": time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
 		"hostname":  "mymachine",
-		"tag":       "",
-		"pid":       "",
-		"content":   "singleword",
+		"app_name":  "",
+		"proc_id":   "",
+		"message":   "singleword",
 		"priority":  34,
 		"facility":  4,
 		"severity":  2,
@@ -117,9 +118,9 @@ func (s *Rfc3164TestSuite) TestParser_NoTimestamp(c *C) {
 	expected := syslogparser.LogParts{
 		"timestamp": now,
 		"hostname":  "",
-		"tag":       "",
-		"pid":       "",
-		"content":   "INFO     leaving (1) step postscripts",
+		"app_name":  "",
+		"proc_id":   "",
+		"message":   "INFO     leaving (1) step postscripts",
 		"priority":  14,
 		"facility":  1,
 		"severity":  6,
@@ -155,8 +156,9 @@ func (s *Rfc3164TestSuite) TestParser_NoPriority(c *C) {
 	expected := syslogparser.LogParts{
 		"timestamp": now,
 		"hostname":  "",
-		"tag":       "",
-		"content":   "Oct 11 22:14:15 Testing no priority",
+		"app_name":  "",
+		"proc_id":   "",
+		"message":   "Oct 11 22:14:15 Testing no priority",
 		"priority":  13,
 		"facility":  1,
 		"severity":  5,
@@ -207,9 +209,9 @@ func (s *Rfc3164TestSuite) TestParser_ValidRFC3339Timestamp(c *C) {
 	expected := syslogparser.LogParts{
 		"timestamp": time.Date(2018, time.January, 12, 22, 14, 15, 0, time.UTC),
 		"hostname":  "mymachine",
-		"tag":       "app",
-		"pid":       "101",
-		"content":   "msg",
+		"app_name":  "app",
+		"proc_id":   "101",
+		"message":   "msg",
 		"priority":  34,
 		"facility":  4,
 		"severity":  2,
