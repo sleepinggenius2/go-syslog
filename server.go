@@ -42,6 +42,7 @@ type Server struct {
 	datagramPool            sync.Pool
 	datagramReadBufferSize  int
 	datagramChannelSize     int
+	location                *time.Location
 }
 
 // NewServer returns a new Server
@@ -81,6 +82,11 @@ func (s *Server) SetUDPBufferSize(b int) {
 // Sets the datagram channel size
 func (s *Server) SetDatagramChannelSize(size int) {
 	s.datagramChannelSize = size
+}
+
+// Sets the default location
+func (s *Server) SetLocation(loc *time.Location) {
+	s.location = loc
 }
 
 // Set the function that extracts a TLS peer name from the TLS connection
@@ -274,6 +280,9 @@ loop:
 
 func (s *Server) parser(line []byte, client string, tlsPeer string) {
 	parser := s.format.GetParser(line)
+	if s.location != nil {
+		parser.Location(s.location)
+	}
 	err := parser.Parse()
 	if err != nil {
 		s.lastError = err
