@@ -150,7 +150,6 @@ func (s *Server) ListenTCP(addr string) error {
 		return err
 	}
 
-	s.done = make(chan struct{})
 	s.listeners = append(s.listeners, listener)
 	return nil
 }
@@ -162,7 +161,6 @@ func (s *Server) ListenTCPTLS(addr string, config *tls.Config) error {
 		return err
 	}
 
-	s.done = make(chan struct{})
 	s.listeners = append(s.listeners, listener)
 	return nil
 }
@@ -176,6 +174,8 @@ func (s *Server) Boot() error {
 	if s.handler == nil {
 		return errors.New("please set a valid handler")
 	}
+
+	s.done = make(chan struct{})
 
 	for _, listener := range s.listeners {
 		s.goAcceptConnection(listener)
