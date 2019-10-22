@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"gopkg.in/sleepinggenius2/go-syslog.v2/format"
+	"github.com/sleepinggenius2/go-syslog/format"
 )
 
 var (

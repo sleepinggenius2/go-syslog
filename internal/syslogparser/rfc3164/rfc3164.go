@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"gopkg.in/sleepinggenius2/go-syslog.v2/internal/syslogparser"
+	"github.com/sleepinggenius2/go-syslog/internal/syslogparser"
 )
 
 type Parser struct {

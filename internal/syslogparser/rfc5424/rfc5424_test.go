@@ -6,7 +6,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	"gopkg.in/sleepinggenius2/go-syslog.v2/internal/syslogparser"
+	"github.com/sleepinggenius2/go-syslog/internal/syslogparser"
 )
 
 // Hooks up gocheck into the gotest runner.

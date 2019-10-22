@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"strconv"
 
-	"gopkg.in/sleepinggenius2/go-syslog.v2/internal/syslogparser/rfc5424"
+	"github.com/sleepinggenius2/go-syslog/internal/syslogparser/rfc5424"
 )
 
 type RFC6587 struct{}
