@@ -60,9 +60,9 @@ func (s *ServerSuite) TestTailFile(c *C) {
 	}
 	server.Wait()
 
-	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
-	c.Check(handler.LastLogParts["app_name"], Equals, "tag")
-	c.Check(handler.LastLogParts["message"], Equals, "content")
+	c.Check(handler.LastLogParts.Hostname, Equals, "hostname")
+	c.Check(handler.LastLogParts.AppName, Equals, "tag")
+	c.Check(handler.LastLogParts.Message, Equals, "content")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -165,7 +165,7 @@ func (s *ServerSuite) TestTcpTimeout(c *C) {
 	server.goScanConnection(&con)
 	server.Wait()
 	c.Check(con.isReadDeadline, Equals, true)
-	c.Check(handler.LastLogParts, IsNil)
+	c.Check(handler.LastLogParts.Valid, Equals, false)
 	c.Check(handler.LastMessageLength, Equals, int64(0))
 	c.Check(handler.LastError, IsNil)
 }
@@ -180,9 +180,9 @@ func (s *ServerSuite) TestUDP3164(c *C) {
 	server.datagramChannel <- DatagramMessage{[]byte(exampleSyslog), "0.0.0.0"}
 	close(server.datagramChannel)
 	server.Wait()
-	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
-	c.Check(handler.LastLogParts["app_name"], Equals, "tag")
-	c.Check(handler.LastLogParts["message"], Equals, "content")
+	c.Check(handler.LastLogParts.Hostname, Equals, "hostname")
+	c.Check(handler.LastLogParts.AppName, Equals, "tag")
+	c.Check(handler.LastLogParts.Message, Equals, "content")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -197,9 +197,9 @@ func (s *ServerSuite) TestUDP3164NoTag(c *C) {
 	server.datagramChannel <- DatagramMessage{[]byte(exampleSyslogNoTSTagHost), "127.0.0.1:45789"}
 	close(server.datagramChannel)
 	server.Wait()
-	c.Check(handler.LastLogParts["hostname"], Equals, "127.0.0.1")
-	c.Check(handler.LastLogParts["app_name"], Equals, "")
-	c.Check(handler.LastLogParts["message"], Equals, "INFO     leaving (1) step postscripts")
+	c.Check(handler.LastLogParts.Hostname, Equals, "127.0.0.1")
+	c.Check(handler.LastLogParts.AppName, Equals, "")
+	c.Check(handler.LastLogParts.Message, Equals, "INFO     leaving (1) step postscripts")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslogNoTSTagHost)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -214,10 +214,10 @@ func (s *ServerSuite) TestUDPAutomatic3164NoPriority(c *C) {
 	server.datagramChannel <- DatagramMessage{[]byte(exampleSyslogNoPriority), "127.0.0.1:45789"}
 	close(server.datagramChannel)
 	server.Wait()
-	c.Check(handler.LastLogParts["hostname"], Equals, "127.0.0.1")
-	c.Check(handler.LastLogParts["app_name"], Equals, "")
-	c.Check(handler.LastLogParts["priority"], Equals, 13)
-	c.Check(handler.LastLogParts["message"], Equals, exampleSyslogNoPriority)
+	c.Check(handler.LastLogParts.Hostname, Equals, "127.0.0.1")
+	c.Check(handler.LastLogParts.AppName, Equals, "")
+	c.Check(handler.LastLogParts.Priority, Equals, 13)
+	c.Check(handler.LastLogParts.Message, Equals, exampleSyslogNoPriority)
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslogNoPriority)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -233,9 +233,9 @@ func (s *ServerSuite) TestUDP6587(c *C) {
 	server.datagramChannel <- DatagramMessage{[]byte(framedSyslog), "0.0.0.0"}
 	close(server.datagramChannel)
 	server.Wait()
-	c.Check(handler.LastLogParts["hostname"], Equals, "mymachine.example.com")
-	c.Check(handler.LastLogParts["facility"], Equals, 4)
-	c.Check(handler.LastLogParts["message"], Equals, "'su root' failed for lonvick on /dev/pts/8")
+	c.Check(handler.LastLogParts.Hostname, Equals, "mymachine.example.com")
+	c.Check(handler.LastLogParts.Facility, Equals, 4)
+	c.Check(handler.LastLogParts.Message, Equals, "'su root' failed for lonvick on /dev/pts/8")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleRFC5424Syslog)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -250,9 +250,9 @@ func (s *ServerSuite) TestUDPAutomatic3164(c *C) {
 	server.datagramChannel <- DatagramMessage{[]byte(exampleSyslog), "0.0.0.0"}
 	close(server.datagramChannel)
 	server.Wait()
-	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
-	c.Check(handler.LastLogParts["app_name"], Equals, "tag")
-	c.Check(handler.LastLogParts["message"], Equals, "content")
+	c.Check(handler.LastLogParts.Hostname, Equals, "hostname")
+	c.Check(handler.LastLogParts.AppName, Equals, "tag")
+	c.Check(handler.LastLogParts.Message, Equals, "content")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -267,9 +267,9 @@ func (s *ServerSuite) TestUDPAutomatic5424(c *C) {
 	server.datagramChannel <- DatagramMessage{[]byte(exampleRFC5424Syslog), "0.0.0.0"}
 	close(server.datagramChannel)
 	server.Wait()
-	c.Check(handler.LastLogParts["hostname"], Equals, "mymachine.example.com")
-	c.Check(handler.LastLogParts["facility"], Equals, 4)
-	c.Check(handler.LastLogParts["message"], Equals, "'su root' failed for lonvick on /dev/pts/8")
+	c.Check(handler.LastLogParts.Hostname, Equals, "mymachine.example.com")
+	c.Check(handler.LastLogParts.Facility, Equals, 4)
+	c.Check(handler.LastLogParts.Message, Equals, "'su root' failed for lonvick on /dev/pts/8")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleRFC5424Syslog)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -285,9 +285,9 @@ func (s *ServerSuite) TestUDPAutomatic3164Plus6587OctetCount(c *C) {
 	server.datagramChannel <- DatagramMessage{[]byte(framedSyslog), "0.0.0.0"}
 	close(server.datagramChannel)
 	server.Wait()
-	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
-	c.Check(handler.LastLogParts["app_name"], Equals, "tag")
-	c.Check(handler.LastLogParts["message"], Equals, "content")
+	c.Check(handler.LastLogParts.Hostname, Equals, "hostname")
+	c.Check(handler.LastLogParts.AppName, Equals, "tag")
+	c.Check(handler.LastLogParts.Message, Equals, "content")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -303,9 +303,9 @@ func (s *ServerSuite) TestUDPAutomatic5424Plus6587OctetCount(c *C) {
 	server.datagramChannel <- DatagramMessage{[]byte(framedSyslog), "0.0.0.0"}
 	close(server.datagramChannel)
 	server.Wait()
-	c.Check(handler.LastLogParts["hostname"], Equals, "mymachine.example.com")
-	c.Check(handler.LastLogParts["facility"], Equals, 4)
-	c.Check(handler.LastLogParts["message"], Equals, "'su root' failed for lonvick on /dev/pts/8")
+	c.Check(handler.LastLogParts.Hostname, Equals, "mymachine.example.com")
+	c.Check(handler.LastLogParts.Facility, Equals, 4)
+	c.Check(handler.LastLogParts.Message, Equals, "'su root' failed for lonvick on /dev/pts/8")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleRFC5424Syslog)))
 	c.Check(handler.LastError, IsNil)
 }
@@ -319,7 +319,7 @@ func (s *handlerSlow) Handle(logParts format.LogParts, msgLen int64, err error) 
 	if len(s.contents) == 0 {
 		time.Sleep(time.Second)
 	}
-	s.contents = append(s.contents, logParts["message"].(string))
+	s.contents = append(s.contents, logParts.Message)
 	s.handlerCounter.Handle(logParts, msgLen, err)
 }
 

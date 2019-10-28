@@ -48,7 +48,21 @@ type Priority struct {
 	S int
 }
 
-type LogParts map[string]interface{}
+type LogParts struct {
+	AppName        string
+	Client         string
+	Facility       int
+	Hostname       string
+	Message        string
+	MsgID          string
+	Priority       int
+	ProcID         string
+	Severity       int
+	StructuredData string
+	Timestamp      time.Time
+	TlsPeer        string
+	Version        int
+}
 
 // https://tools.ietf.org/html/rfc3164#section-4.1
 func ParsePriority(buff []byte, cursor *int, l int) (Priority, error) {

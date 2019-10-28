@@ -44,14 +44,14 @@ func (s *Rfc3164TestSuite) TestParser_Valid(c *C) {
 
 	obtained := p.Dump()
 	expected := syslogparser.LogParts{
-		"timestamp": time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
-		"hostname":  "mymachine",
-		"app_name":  "very.large.syslog.message.tag",
-		"proc_id":   "",
-		"message":   "'su root' failed for lonvick on /dev/pts/8",
-		"priority":  34,
-		"facility":  4,
-		"severity":  2,
+		Timestamp: time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
+		Hostname:  "mymachine",
+		AppName:   "very.large.syslog.message.tag",
+		ProcID:    "",
+		Message:   "'su root' failed for lonvick on /dev/pts/8",
+		Priority:  34,
+		Facility:  4,
+		Severity:  2,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)
@@ -77,14 +77,14 @@ func (s *Rfc3164TestSuite) TestParser_ValidNoTag(c *C) {
 
 	obtained := p.Dump()
 	expected := syslogparser.LogParts{
-		"timestamp": time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
-		"hostname":  "mymachine",
-		"app_name":  "",
-		"proc_id":   "",
-		"message":   "singleword",
-		"priority":  34,
-		"facility":  4,
-		"severity":  2,
+		Timestamp: time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
+		Hostname:  "mymachine",
+		AppName:   "",
+		ProcID:    "",
+		Message:   "singleword",
+		Priority:  34,
+		Facility:  4,
+		Severity:  2,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)
@@ -111,19 +111,19 @@ func (s *Rfc3164TestSuite) TestParser_NoTimestamp(c *C) {
 
 	obtained := p.Dump()
 
-	obtainedTime := obtained["timestamp"].(time.Time)
+	obtainedTime := obtained.Timestamp
 	s.assertTimeIsCloseToNow(c, obtainedTime)
 
-	obtained["timestamp"] = now // XXX: Need to mock out time to test this fully
+	obtained.Timestamp = now // XXX: Need to mock out time to test this fully
 	expected := syslogparser.LogParts{
-		"timestamp": now,
-		"hostname":  "",
-		"app_name":  "",
-		"proc_id":   "",
-		"message":   "INFO     leaving (1) step postscripts",
-		"priority":  14,
-		"facility":  1,
-		"severity":  6,
+		Timestamp: now,
+		Hostname:  "",
+		AppName:   "",
+		ProcID:    "",
+		Message:   "INFO     leaving (1) step postscripts",
+		Priority:  14,
+		Facility:  1,
+		Severity:  6,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)
@@ -149,19 +149,19 @@ func (s *Rfc3164TestSuite) TestParser_NoPriority(c *C) {
 	now := time.Now()
 
 	obtained := p.Dump()
-	obtainedTime := obtained["timestamp"].(time.Time)
+	obtainedTime := obtained.Timestamp
 	s.assertTimeIsCloseToNow(c, obtainedTime)
 
-	obtained["timestamp"] = now // XXX: Need to mock out time to test this fully
+	obtained.Timestamp = now // XXX: Need to mock out time to test this fully
 	expected := syslogparser.LogParts{
-		"timestamp": now,
-		"hostname":  "",
-		"app_name":  "",
-		"proc_id":   "",
-		"message":   "Oct 11 22:14:15 Testing no priority",
-		"priority":  13,
-		"facility":  1,
-		"severity":  5,
+		Timestamp: now,
+		Hostname:  "",
+		AppName:   "",
+		ProcID:    "",
+		Message:   "Oct 11 22:14:15 Testing no priority",
+		Priority:  13,
+		Facility:  1,
+		Severity:  5,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)
@@ -207,14 +207,14 @@ func (s *Rfc3164TestSuite) TestParser_ValidRFC3339Timestamp(c *C) {
 	c.Assert(err, IsNil)
 	obtained := p.Dump()
 	expected := syslogparser.LogParts{
-		"timestamp": time.Date(2018, time.January, 12, 22, 14, 15, 0, time.UTC),
-		"hostname":  "mymachine",
-		"app_name":  "app",
-		"proc_id":   "101",
-		"message":   "msg",
-		"priority":  34,
-		"facility":  4,
-		"severity":  2,
+		Timestamp: time.Date(2018, time.January, 12, 22, 14, 15, 0, time.UTC),
+		Hostname:  "mymachine",
+		AppName:   "app",
+		ProcID:    "101",
+		Message:   "msg",
+		Priority:  34,
+		Facility:  4,
+		Severity:  2,
 	}
 	c.Assert(obtained, DeepEquals, expected)
 }

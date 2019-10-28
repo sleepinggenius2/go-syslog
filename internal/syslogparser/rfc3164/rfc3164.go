@@ -90,14 +90,14 @@ func (p *Parser) Parse() error {
 
 func (p *Parser) Dump() syslogparser.LogParts {
 	return syslogparser.LogParts{
-		"priority":  p.priority.P,
-		"facility":  p.priority.F,
-		"severity":  p.priority.S,
-		"timestamp": p.header.timestamp,
-		"hostname":  p.header.hostname,
-		"app_name":  p.message.tag,
-		"proc_id":   p.message.pid,
-		"message":   p.message.content,
+		Priority:  p.priority.P,
+		Facility:  p.priority.F,
+		Severity:  p.priority.S,
+		Timestamp: p.header.timestamp,
+		Hostname:  p.header.hostname,
+		AppName:   p.message.tag,
+		ProcID:    p.message.pid,
+		Message:   p.message.content,
 	}
 }
 

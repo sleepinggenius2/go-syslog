@@ -289,15 +289,15 @@ func (s *Server) parser(line []byte, client string, tlsPeer string) {
 	}
 
 	logParts := parser.Dump()
-	logParts["client"] = client
-	if logParts["hostname"] == "" && (s.format == RFC3164 || s.format == Automatic) {
+	logParts.Client = client
+	if logParts.Hostname == "" && (s.format == RFC3164 || s.format == Automatic) {
 		if i := strings.Index(client, ":"); i > 1 {
-			logParts["hostname"] = client[:i]
+			logParts.Hostname = client[:i]
 		} else {
-			logParts["hostname"] = client
+			logParts.Hostname = client
 		}
 	}
-	logParts["tls_peer"] = tlsPeer
+	logParts.TlsPeer = tlsPeer
 
 	s.handler.Handle(logParts, int64(len(line)), err)
 }

@@ -106,17 +106,17 @@ func (p *Parser) Parse() error {
 
 func (p *Parser) Dump() syslogparser.LogParts {
 	return syslogparser.LogParts{
-		"priority":        p.header.priority.P,
-		"facility":        p.header.priority.F,
-		"severity":        p.header.priority.S,
-		"version":         p.header.version,
-		"timestamp":       p.header.timestamp,
-		"hostname":        p.header.hostname,
-		"app_name":        p.header.appName,
-		"proc_id":         p.header.procId,
-		"msg_id":          p.header.msgId,
-		"structured_data": p.structuredData,
-		"message":         p.message,
+		Priority:       p.header.priority.P,
+		Facility:       p.header.priority.F,
+		Severity:       p.header.priority.S,
+		Version:        p.header.version,
+		Timestamp:      p.header.timestamp,
+		Hostname:       p.header.hostname,
+		AppName:        p.header.appName,
+		ProcID:         p.header.procId,
+		MsgID:          p.header.msgId,
+		StructuredData: p.structuredData,
+		Message:        p.message,
 	}
 }
 

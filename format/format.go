@@ -7,7 +7,10 @@ import (
 	"github.com/sleepinggenius2/go-syslog/internal/syslogparser"
 )
 
-type LogParts map[string]interface{}
+type LogParts struct {
+	syslogparser.LogParts
+	Valid bool
+}
 
 type LogParser interface {
 	Parse() error
@@ -25,5 +28,5 @@ type parserWrapper struct {
 }
 
 func (w *parserWrapper) Dump() LogParts {
-	return LogParts(w.LogParser.Dump())
+	return LogParts{w.LogParser.Dump(), true}
 }

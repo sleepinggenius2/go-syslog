@@ -87,10 +87,10 @@ func (s *ServerSuite) TestTLS(c *C) {
 	}(server)
 	server.Wait()
 
-	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
-	c.Check(handler.LastLogParts["app_name"], Equals, "tag")
-	c.Check(handler.LastLogParts["message"], Equals, "content")
-	c.Check(handler.LastLogParts["tls_peer"], Equals, "dummycert1")
+	c.Check(handler.LastLogParts.Hostname, Equals, "hostname")
+	c.Check(handler.LastLogParts.AppName, Equals, "tag")
+	c.Check(handler.LastLogParts.Message, Equals, "content")
+	c.Check(handler.LastLogParts.TlsPeer, Equals, "dummycert1")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
 	c.Check(handler.LastError, IsNil)
 }

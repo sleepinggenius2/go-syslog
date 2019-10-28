@@ -16,9 +16,9 @@ func (s *FormatSuite) TestRFC3164_CorrectParsingTypical(c *C) {
 	parser := f.GetParser([]byte(find))
 	err := parser.Parse()
 	c.Assert(err, IsNil)
-	c.Assert(parser.Dump()["message"], Equals, "ciao")
-	c.Assert(parser.Dump()["hostname"], Equals, "myhostname")
-	c.Assert(parser.Dump()["app_name"], Equals, "myprogram")
+	c.Assert(parser.Dump().Message, Equals, "ciao")
+	c.Assert(parser.Dump().Hostname, Equals, "myhostname")
+	c.Assert(parser.Dump().AppName, Equals, "myprogram")
 
 }
 func (s *FormatSuite) TestRFC3164_CorrectParsingTypicalWithPID(c *C) {
@@ -28,9 +28,9 @@ func (s *FormatSuite) TestRFC3164_CorrectParsingTypicalWithPID(c *C) {
 	parser := f.GetParser([]byte(find))
 	err := parser.Parse()
 	c.Assert(err, IsNil)
-	c.Assert(parser.Dump()["message"], Equals, "ciao")
-	c.Assert(parser.Dump()["hostname"], Equals, "myhostname")
-	c.Assert(parser.Dump()["app_name"], Equals, "myprogram")
+	c.Assert(parser.Dump().Message, Equals, "ciao")
+	c.Assert(parser.Dump().Hostname, Equals, "myhostname")
+	c.Assert(parser.Dump().AppName, Equals, "myprogram")
 
 }
 
@@ -42,9 +42,8 @@ func (s *FormatSuite) TestRFC3164_CorrectParsingGNU(c *C) {
 	parser := f.GetParser([]byte(find))
 	err := parser.Parse()
 	c.Assert(err, IsNil)
-	c.Assert(parser.Dump()["message"], Equals, "ciao")
-	// c.Assert(parser.Dump()["hostname"], Equals, "myhostname")
-	c.Assert(parser.Dump()["app_name"], Equals, "myprogram")
+	c.Assert(parser.Dump().Message, Equals, "ciao")
+	c.Assert(parser.Dump().AppName, Equals, "myprogram")
 
 }
 
@@ -57,8 +56,7 @@ func (s *FormatSuite) TestRFC3164_CorrectParsingJournald(c *C) {
 	parser := f.GetParser([]byte(find))
 	err := parser.Parse()
 	c.Assert(err, IsNil)
-	c.Assert(parser.Dump()["message"], Equals, "blah")
-	// c.Assert(parser.Dump()["hostname"], Equals, "myhostname")
-	c.Assert(parser.Dump()["app_name"], Equals, "myprog")
+	c.Assert(parser.Dump().Message, Equals, "blah")
+	c.Assert(parser.Dump().AppName, Equals, "myprog")
 
 }
