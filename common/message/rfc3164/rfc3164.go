@@ -5,14 +5,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/sleepinggenius2/go-syslog/internal/syslogparser"
+	"github.com/sleepinggenius2/go-syslog/common/message"
 )
 
 type Parser struct {
 	buff     []byte
 	cursor   int
 	l        int
-	priority syslogparser.Priority
+	priority message.Priority
 	version  int
 	header   header
 	message  rfc3164message
@@ -49,11 +49,11 @@ func (p *Parser) Parse() error {
 	pri, err := p.parsePriority()
 	if err != nil {
 		// RFC3164 sec 4.3.3
-		p.priority = syslogparser.Priority{P: 13, F: 1, S: 5}
+		p.priority = message.Priority{P: 13, F: 1, S: 5}
 		p.cursor = tcursor
 		content, err := p.parseContent()
 		p.header.timestamp = time.Now().Round(time.Second)
-		if err != syslogparser.ErrEOL {
+		if err != message.ErrEOL {
 			return err
 		}
 		p.message = rfc3164message{content: content}
@@ -62,7 +62,7 @@ func (p *Parser) Parse() error {
 
 	tcursor = p.cursor
 	hdr, err := p.parseHeader()
-	if err == syslogparser.ErrTimestampUnknownFormat {
+	if err == message.ErrTimestampUnknownFormat {
 		// RFC3164 sec 4.3.2.
 		hdr.timestamp = time.Now().Round(time.Second)
 		// No tag processing should be done
@@ -76,20 +76,20 @@ func (p *Parser) Parse() error {
 	}
 
 	msg, err := p.parsemessage()
-	if err != syslogparser.ErrEOL {
+	if err != message.ErrEOL {
 		return err
 	}
 
 	p.priority = pri
-	p.version = syslogparser.NO_VERSION
+	p.version = message.NO_VERSION
 	p.header = hdr
 	p.message = msg
 
 	return nil
 }
 
-func (p *Parser) Dump() syslogparser.LogParts {
-	return syslogparser.LogParts{
+func (p *Parser) Dump() message.LogParts {
+	return message.LogParts{
 		Priority:  p.priority.P,
 		Facility:  p.priority.F,
 		Severity:  p.priority.S,
@@ -101,8 +101,8 @@ func (p *Parser) Dump() syslogparser.LogParts {
 	}
 }
 
-func (p *Parser) parsePriority() (syslogparser.Priority, error) {
-	return syslogparser.ParsePriority(p.buff, &p.cursor, p.l)
+func (p *Parser) parsePriority() (message.Priority, error) {
+	return message.ParsePriority(p.buff, &p.cursor, p.l)
 }
 
 func (p *Parser) parseHeader() (header, error) {
@@ -139,7 +139,7 @@ func (p *Parser) parsemessage() (rfc3164message, error) {
 	}
 
 	content, err := p.parseContent()
-	if err != syslogparser.ErrEOL {
+	if err != message.ErrEOL {
 		return msg, err
 	}
 
@@ -193,7 +193,7 @@ func (p *Parser) parseTimestamp() (time.Time, error) {
 			p.cursor++
 		}
 
-		return ts, syslogparser.ErrTimestampUnknownFormat
+		return ts, message.ErrTimestampUnknownFormat
 	}
 
 	fixTimestampIfNeeded(&ts)
@@ -209,7 +209,7 @@ func (p *Parser) parseTimestamp() (time.Time, error) {
 
 func (p *Parser) parseHostname() (string, error) {
 	oldcursor := p.cursor
-	hostname, err := syslogparser.ParseHostname(p.buff, &p.cursor, p.l)
+	hostname, err := message.ParseHostname(p.buff, &p.cursor, p.l)
 	if err == nil && len(hostname) > 0 && string(hostname[len(hostname)-1]) == ":" { // not an hostname! we found a GNU implementation of syslog()
 		p.cursor = oldcursor - 1
 		myhostname, err := os.Hostname()
@@ -282,13 +282,13 @@ func (p *Parser) parseTag() (string, string, error) {
 
 func (p *Parser) parseContent() (string, error) {
 	if p.cursor > p.l {
-		return "", syslogparser.ErrEOL
+		return "", message.ErrEOL
 	}
 
 	content := bytes.Trim(p.buff[p.cursor:p.l], " ")
 	p.cursor += len(content)
 
-	return string(content), syslogparser.ErrEOL
+	return string(content), message.ErrEOL
 }
 
 func fixTimestampIfNeeded(ts *time.Time) {

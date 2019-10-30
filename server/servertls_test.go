@@ -1,4 +1,4 @@
-package syslog
+package server
 
 import (
 	"crypto/rand"

@@ -7,7 +7,7 @@ import (
 
 	. "gopkg.in/check.v1"
 
-	"github.com/sleepinggenius2/go-syslog/internal/syslogparser"
+	"github.com/sleepinggenius2/go-syslog/common/message"
 )
 
 // Hooks up gocheck into the gotest runner.
@@ -43,7 +43,7 @@ func (s *Rfc3164TestSuite) TestParser_Valid(c *C) {
 	now := time.Now()
 
 	obtained := p.Dump()
-	expected := syslogparser.LogParts{
+	expected := message.LogParts{
 		Timestamp: time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
 		Hostname:  "mymachine",
 		AppName:   "very.large.syslog.message.tag",
@@ -76,7 +76,7 @@ func (s *Rfc3164TestSuite) TestParser_ValidNoTag(c *C) {
 	now := time.Now()
 
 	obtained := p.Dump()
-	expected := syslogparser.LogParts{
+	expected := message.LogParts{
 		Timestamp: time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
 		Hostname:  "mymachine",
 		AppName:   "",
@@ -115,7 +115,7 @@ func (s *Rfc3164TestSuite) TestParser_NoTimestamp(c *C) {
 	s.assertTimeIsCloseToNow(c, obtainedTime)
 
 	obtained.Timestamp = now // XXX: Need to mock out time to test this fully
-	expected := syslogparser.LogParts{
+	expected := message.LogParts{
 		Timestamp: now,
 		Hostname:  "",
 		AppName:   "",
@@ -153,7 +153,7 @@ func (s *Rfc3164TestSuite) TestParser_NoPriority(c *C) {
 	s.assertTimeIsCloseToNow(c, obtainedTime)
 
 	obtained.Timestamp = now // XXX: Need to mock out time to test this fully
-	expected := syslogparser.LogParts{
+	expected := message.LogParts{
 		Timestamp: now,
 		Hostname:  "",
 		AppName:   "",
@@ -206,7 +206,7 @@ func (s *Rfc3164TestSuite) TestParser_ValidRFC3339Timestamp(c *C) {
 	err := p.Parse()
 	c.Assert(err, IsNil)
 	obtained := p.Dump()
-	expected := syslogparser.LogParts{
+	expected := message.LogParts{
 		Timestamp: time.Date(2018, time.January, 12, 22, 14, 15, 0, time.UTC),
 		Hostname:  "mymachine",
 		AppName:   "app",
@@ -223,7 +223,7 @@ func (s *Rfc3164TestSuite) TestParseHeader_InvalidTimestamp(c *C) {
 	buff := []byte("Oct 34 32:72:82 mymachine ")
 	hdr := header{}
 
-	s.assertRfc3164Header(c, hdr, buff, lastTriedTimestampLen+1, syslogparser.ErrTimestampUnknownFormat)
+	s.assertRfc3164Header(c, hdr, buff, lastTriedTimestampLen+1, message.ErrTimestampUnknownFormat)
 }
 
 func (s *Rfc3164TestSuite) TestParsemessage_Valid(c *C) {
@@ -235,14 +235,14 @@ func (s *Rfc3164TestSuite) TestParsemessage_Valid(c *C) {
 		content: content,
 	}
 
-	s.assertRfc3164message(c, hdr, buff, len(buff), syslogparser.ErrEOL)
+	s.assertRfc3164message(c, hdr, buff, len(buff), message.ErrEOL)
 }
 
 func (s *Rfc3164TestSuite) TestParseTimestamp_Invalid(c *C) {
 	buff := []byte("Oct 34 32:72:82")
 	ts := new(time.Time)
 
-	s.assertTimestamp(c, *ts, buff, lastTriedTimestampLen, syslogparser.ErrTimestampUnknownFormat)
+	s.assertTimestamp(c, *ts, buff, lastTriedTimestampLen, message.ErrTimestampUnknownFormat)
 }
 
 func (s *Rfc3164TestSuite) TestParseTimestamp_TrailingSpace(c *C) {
@@ -313,7 +313,7 @@ func (s *Rfc3164TestSuite) TestParseContent_Valid(c *C) {
 
 	p := NewParser(buff)
 	obtained, err := p.parseContent()
-	c.Assert(err, Equals, syslogparser.ErrEOL)
+	c.Assert(err, Equals, message.ErrEOL)
 	c.Assert(obtained, Equals, content)
 	c.Assert(p.cursor, Equals, len(content))
 }
@@ -385,7 +385,7 @@ func (s *Rfc3164TestSuite) BenchmarkParsemessage(c *C) {
 
 	for i := 0; i < c.N; i++ {
 		_, err := p.parsemessage()
-		if err != syslogparser.ErrEOL {
+		if err != message.ErrEOL {
 			panic(err)
 		}
 

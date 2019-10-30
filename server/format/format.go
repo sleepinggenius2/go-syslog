@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"time"
 
-	"github.com/sleepinggenius2/go-syslog/internal/syslogparser"
+	"github.com/sleepinggenius2/go-syslog/common/message"
 )
 
 type LogParts struct {
-	syslogparser.LogParts
+	message.LogParts
 	Valid bool
 }
 
@@ -24,7 +24,7 @@ type Format interface {
 }
 
 type parserWrapper struct {
-	syslogparser.LogParser
+	message.LogParser
 }
 
 func (w *parserWrapper) Dump() LogParts {

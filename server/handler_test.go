@@ -1,9 +1,9 @@
-package syslog
+package server
 
 import (
 	. "gopkg.in/check.v1"
 
-	"github.com/sleepinggenius2/go-syslog/format"
+	"github.com/sleepinggenius2/go-syslog/server/format"
 )
 
 type HandlerSuite struct{}

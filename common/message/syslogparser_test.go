@@ -1,4 +1,4 @@
-package syslogparser
+package message
 
 import (
 	"testing"

@@ -7,7 +7,7 @@ import (
 
 	. "gopkg.in/check.v1"
 
-	"github.com/sleepinggenius2/go-syslog/internal/syslogparser"
+	"github.com/sleepinggenius2/go-syslog/common/message"
 )
 
 // Hooks up gocheck into the gotest runner.
@@ -35,8 +35,8 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 	tmpTs, err := time.Parse("-07:00", "-07:00")
 	c.Assert(err, IsNil)
 
-	expected := []syslogparser.LogParts{
-		syslogparser.LogParts{
+	expected := []message.LogParts{
+		message.LogParts{
 			Priority:       34,
 			Facility:       4,
 			Severity:       2,
@@ -49,7 +49,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			StructuredData: "-",
 			Message:        "'su root' failed for lonvick on /dev/pts/8",
 		},
-		syslogparser.LogParts{
+		message.LogParts{
 			Priority:       165,
 			Facility:       20,
 			Severity:       5,
@@ -62,7 +62,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			StructuredData: "-",
 			Message:        "%% It's time to make the do-nuts.",
 		},
-		syslogparser.LogParts{
+		message.LogParts{
 			Priority:       165,
 			Facility:       20,
 			Severity:       5,
@@ -75,7 +75,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			StructuredData: "-",
 			Message:        "%% It's time to make the do-nuts.",
 		},
-		syslogparser.LogParts{
+		message.LogParts{
 			Priority:       165,
 			Facility:       20,
 			Severity:       5,
@@ -88,7 +88,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			StructuredData: `[exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"]`,
 			Message:        "An application event log entry...",
 		},
-		syslogparser.LogParts{
+		message.LogParts{
 			Priority:       165,
 			Facility:       20,
 			Severity:       5,
@@ -101,7 +101,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			StructuredData: `[exampleSDID@32473 iut="3" eventSource= "Application" eventID="1011"][examplePriority@32473 class="high"]`,
 			Message:        "",
 		},
-		syslogparser.LogParts{
+		message.LogParts{
 			Priority:       165,
 			Facility:       20,
 			Severity:       5,
@@ -169,7 +169,7 @@ func (s *Rfc5424TestSuite) TestParseHeader_Valid(c *C) {
 		fmt.Sprintf(headerFmt, tsString, hostname, appName, procId, nilValue),
 	}
 
-	pri := syslogparser.Priority{
+	pri := message.Priority{
 		P: 165,
 		F: 20,
 		S: 5,
@@ -290,7 +290,7 @@ func (s *Rfc5424TestSuite) TestParseTimestamp_NanoSeconds(c *C) {
 	buff := []byte("2003-08-24T05:14:15.000000003-07:00")
 	ts := new(time.Time)
 
-	s.assertTimestamp(c, *ts, buff, 26, syslogparser.ErrTimestampUnknownFormat)
+	s.assertTimestamp(c, *ts, buff, 26, message.ErrTimestampUnknownFormat)
 }
 
 func (s *Rfc5424TestSuite) TestParseTimestamp_NilValue(c *C) {
@@ -310,7 +310,7 @@ func (s *Rfc5424TestSuite) TestParseTimestamp_Empty(c *C) {
 func (s *Rfc5424TestSuite) TestFindNextSpace_NoSpace(c *C) {
 	buff := []byte("aaaaaa")
 
-	s.assertFindNextSpace(c, 0, buff, syslogparser.ErrNoSpace)
+	s.assertFindNextSpace(c, 0, buff, message.ErrNoSpace)
 }
 
 func (s *Rfc5424TestSuite) TestFindNextSpace_SpaceFound(c *C) {
@@ -330,7 +330,7 @@ func (s *Rfc5424TestSuite) TestParseYear_TooShort(c *C) {
 	buff := []byte("123")
 	expected := 0
 
-	s.assertParseYear(c, expected, buff, 0, syslogparser.ErrEOL)
+	s.assertParseYear(c, expected, buff, 0, message.ErrEOL)
 }
 
 func (s *Rfc5424TestSuite) TestParseYear_Valid(c *C) {
@@ -364,7 +364,7 @@ func (s *Rfc5424TestSuite) TestParseMonth_TooShort(c *C) {
 	buff := []byte("1")
 	expected := 0
 
-	s.assertParseMonth(c, expected, buff, 0, syslogparser.ErrEOL)
+	s.assertParseMonth(c, expected, buff, 0, message.ErrEOL)
 }
 
 func (s *Rfc5424TestSuite) TestParseMonth_Valid(c *C) {
@@ -385,7 +385,7 @@ func (s *Rfc5424TestSuite) TestParseDay_TooShort(c *C) {
 	buff := []byte("1")
 	expected := 0
 
-	s.assertParseDay(c, expected, buff, 0, syslogparser.ErrEOL)
+	s.assertParseDay(c, expected, buff, 0, message.ErrEOL)
 }
 
 func (s *Rfc5424TestSuite) TestParseDay_InvalidRange(c *C) {
@@ -412,12 +412,12 @@ func (s *Rfc5424TestSuite) TestParseFullDate_Invalid(c *C) {
 	buff := []byte("2013+10-28")
 	fd := fullDate{}
 
-	s.assertParseFullDate(c, fd, buff, 4, syslogparser.ErrTimestampUnknownFormat)
+	s.assertParseFullDate(c, fd, buff, 4, message.ErrTimestampUnknownFormat)
 
 	// ---
 
 	buff = []byte("2013-10+28")
-	s.assertParseFullDate(c, fd, buff, 7, syslogparser.ErrTimestampUnknownFormat)
+	s.assertParseFullDate(c, fd, buff, 7, message.ErrTimestampUnknownFormat)
 }
 
 func (s *Rfc5424TestSuite) TestParseFullDate_Valid(c *C) {
@@ -442,7 +442,7 @@ func (s *Rfc5424TestSuite) TestParseHour_TooShort(c *C) {
 	buff := []byte("1")
 	expected := 0
 
-	s.assertParseHour(c, expected, buff, 0, syslogparser.ErrEOL)
+	s.assertParseHour(c, expected, buff, 0, message.ErrEOL)
 }
 
 func (s *Rfc5424TestSuite) TestParseHour_InvalidRange(c *C) {
@@ -476,7 +476,7 @@ func (s *Rfc5424TestSuite) TestParseMinute_TooShort(c *C) {
 	buff := []byte("1")
 	expected := 0
 
-	s.assertParseMinute(c, expected, buff, 0, syslogparser.ErrEOL)
+	s.assertParseMinute(c, expected, buff, 0, message.ErrEOL)
 }
 
 func (s *Rfc5424TestSuite) TestParseMinute_InvalidRange(c *C) {
@@ -510,7 +510,7 @@ func (s *Rfc5424TestSuite) TestParseSecond_TooShort(c *C) {
 	buff := []byte("1")
 	expected := 0
 
-	s.assertParseSecond(c, expected, buff, 0, syslogparser.ErrEOL)
+	s.assertParseSecond(c, expected, buff, 0, message.ErrEOL)
 }
 
 func (s *Rfc5424TestSuite) TestParseSecond_InvalidRange(c *C) {
@@ -794,7 +794,7 @@ func (s *Rfc5424TestSuite) assertTimestamp(c *C, ts time.Time, b []byte, expC in
 }
 
 func (s *Rfc5424TestSuite) assertFindNextSpace(c *C, nextSpace int, b []byte, e error) {
-	obtained, err := syslogparser.FindNextSpace(b, 0, len(b))
+	obtained, err := message.FindNextSpace(b, 0, len(b))
 	c.Assert(obtained, Equals, nextSpace)
 	c.Assert(err, Equals, e)
 }

@@ -1,4 +1,4 @@
-package syslog
+package server
 
 import (
 	"bufio"
@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sleepinggenius2/go-syslog/format"
+	"github.com/sleepinggenius2/go-syslog/server/format"
 )
 
 var (

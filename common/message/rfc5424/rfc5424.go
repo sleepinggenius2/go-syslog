@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sleepinggenius2/go-syslog/internal/syslogparser"
+	"github.com/sleepinggenius2/go-syslog/common/message"
 )
 
 const (
@@ -17,19 +17,19 @@ const (
 )
 
 var (
-	ErrYearInvalid       = &syslogparser.ParserError{ErrorString: "Invalid year in timestamp"}
-	ErrMonthInvalid      = &syslogparser.ParserError{ErrorString: "Invalid month in timestamp"}
-	ErrDayInvalid        = &syslogparser.ParserError{ErrorString: "Invalid day in timestamp"}
-	ErrHourInvalid       = &syslogparser.ParserError{ErrorString: "Invalid hour in timestamp"}
-	ErrMinuteInvalid     = &syslogparser.ParserError{ErrorString: "Invalid minute in timestamp"}
-	ErrSecondInvalid     = &syslogparser.ParserError{ErrorString: "Invalid second in timestamp"}
-	ErrSecFracInvalid    = &syslogparser.ParserError{ErrorString: "Invalid fraction of second in timestamp"}
-	ErrTimeZoneInvalid   = &syslogparser.ParserError{ErrorString: "Invalid time zone in timestamp"}
-	ErrInvalidTimeFormat = &syslogparser.ParserError{ErrorString: "Invalid time format"}
-	ErrInvalidAppName    = &syslogparser.ParserError{ErrorString: "Invalid app name"}
-	ErrInvalidProcId     = &syslogparser.ParserError{ErrorString: "Invalid proc ID"}
-	ErrInvalidMsgId      = &syslogparser.ParserError{ErrorString: "Invalid msg ID"}
-	ErrNoStructuredData  = &syslogparser.ParserError{ErrorString: "No structured data"}
+	ErrYearInvalid       = &message.ParserError{ErrorString: "Invalid year in timestamp"}
+	ErrMonthInvalid      = &message.ParserError{ErrorString: "Invalid month in timestamp"}
+	ErrDayInvalid        = &message.ParserError{ErrorString: "Invalid day in timestamp"}
+	ErrHourInvalid       = &message.ParserError{ErrorString: "Invalid hour in timestamp"}
+	ErrMinuteInvalid     = &message.ParserError{ErrorString: "Invalid minute in timestamp"}
+	ErrSecondInvalid     = &message.ParserError{ErrorString: "Invalid second in timestamp"}
+	ErrSecFracInvalid    = &message.ParserError{ErrorString: "Invalid fraction of second in timestamp"}
+	ErrTimeZoneInvalid   = &message.ParserError{ErrorString: "Invalid time zone in timestamp"}
+	ErrInvalidTimeFormat = &message.ParserError{ErrorString: "Invalid time format"}
+	ErrInvalidAppName    = &message.ParserError{ErrorString: "Invalid app name"}
+	ErrInvalidProcId     = &message.ParserError{ErrorString: "Invalid proc ID"}
+	ErrInvalidMsgId      = &message.ParserError{ErrorString: "Invalid msg ID"}
+	ErrNoStructuredData  = &message.ParserError{ErrorString: "No structured data"}
 )
 
 type Parser struct {
@@ -42,7 +42,7 @@ type Parser struct {
 }
 
 type header struct {
-	priority  syslogparser.Priority
+	priority  message.Priority
 	version   int
 	timestamp time.Time
 	hostname  string
@@ -104,8 +104,8 @@ func (p *Parser) Parse() error {
 	return nil
 }
 
-func (p *Parser) Dump() syslogparser.LogParts {
-	return syslogparser.LogParts{
+func (p *Parser) Dump() message.LogParts {
+	return message.LogParts{
 		Priority:       p.header.priority.P,
 		Facility:       p.header.priority.F,
 		Severity:       p.header.priority.S,
@@ -181,12 +181,12 @@ func (p *Parser) parseHeader() (header, error) {
 	return hdr, nil
 }
 
-func (p *Parser) parsePriority() (syslogparser.Priority, error) {
-	return syslogparser.ParsePriority(p.buff, &p.cursor, p.l)
+func (p *Parser) parsePriority() (message.Priority, error) {
+	return message.ParsePriority(p.buff, &p.cursor, p.l)
 }
 
 func (p *Parser) parseVersion() (int, error) {
-	return syslogparser.ParseVersion(p.buff, &p.cursor, p.l)
+	return message.ParseVersion(p.buff, &p.cursor, p.l)
 }
 
 // https://tools.ietf.org/html/rfc5424#section-6.2.3
@@ -215,7 +215,7 @@ func (p *Parser) parseTimestamp() (time.Time, error) {
 
 	ft, err := parseFullTime(p.buff, &p.cursor, p.l)
 	if err != nil {
-		return ts, syslogparser.ErrTimestampUnknownFormat
+		return ts, message.ErrTimestampUnknownFormat
 	}
 
 	nSec, err := toNSec(ft.pt.secFrac)
@@ -239,7 +239,7 @@ func (p *Parser) parseTimestamp() (time.Time, error) {
 
 // HOSTNAME = NILVALUE / 1*255PRINTUSASCII
 func (p *Parser) parseHostname() (string, error) {
-	return syslogparser.ParseHostname(p.buff, &p.cursor, p.l)
+	return message.ParseHostname(p.buff, &p.cursor, p.l)
 }
 
 // APP-NAME = NILVALUE / 1*48PRINTUSASCII
@@ -277,7 +277,7 @@ func parseFullDate(buff []byte, cursor *int, l int) (fullDate, error) {
 	}
 
 	if *cursor >= l || buff[*cursor] != '-' {
-		return fd, syslogparser.ErrTimestampUnknownFormat
+		return fd, message.ErrTimestampUnknownFormat
 	}
 
 	*cursor++
@@ -288,7 +288,7 @@ func parseFullDate(buff []byte, cursor *int, l int) (fullDate, error) {
 	}
 
 	if *cursor >= l || buff[*cursor] != '-' {
-		return fd, syslogparser.ErrTimestampUnknownFormat
+		return fd, message.ErrTimestampUnknownFormat
 	}
 
 	*cursor++
@@ -312,7 +312,7 @@ func parseYear(buff []byte, cursor *int, l int) (int, error) {
 	yearLen := 4
 
 	if *cursor+yearLen > l {
-		return 0, syslogparser.ErrEOL
+		return 0, message.ErrEOL
 	}
 
 	// XXX : we do not check for a valid year (ie. 1999, 2013 etc)
@@ -331,7 +331,7 @@ func parseYear(buff []byte, cursor *int, l int) (int, error) {
 
 // DATE-MONTH = 2DIGIT  ; 01-12
 func parseMonth(buff []byte, cursor *int, l int) (int, error) {
-	return syslogparser.Parse2Digits(buff, cursor, l, 1, 12, ErrMonthInvalid)
+	return message.Parse2Digits(buff, cursor, l, 1, 12, ErrMonthInvalid)
 }
 
 // DATE-MDAY = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on month/year
@@ -340,7 +340,7 @@ func parseDay(buff []byte, cursor *int, l int) (int, error) {
 	// XXX : we do not check if valid regarding February or leap years
 	// XXX : we only checks that day is in range [01 -> 31]
 	// XXX : in other words this function will not rant if you provide Feb 31th
-	return syslogparser.Parse2Digits(buff, cursor, l, 1, 31, ErrDayInvalid)
+	return message.Parse2Digits(buff, cursor, l, 1, 31, ErrDayInvalid)
 }
 
 // FULL-TIME = PARTIAL-TIME TIME-OFFSET
@@ -412,17 +412,17 @@ func parsePartialTime(buff []byte, cursor *int, l int) (partialTime, error) {
 
 // TIME-HOUR = 2DIGIT  ; 00-23
 func parseHour(buff []byte, cursor *int, l int) (int, error) {
-	return syslogparser.Parse2Digits(buff, cursor, l, 0, 23, ErrHourInvalid)
+	return message.Parse2Digits(buff, cursor, l, 0, 23, ErrHourInvalid)
 }
 
 // TIME-MINUTE = 2DIGIT  ; 00-59
 func parseMinute(buff []byte, cursor *int, l int) (int, error) {
-	return syslogparser.Parse2Digits(buff, cursor, l, 0, 59, ErrMinuteInvalid)
+	return message.Parse2Digits(buff, cursor, l, 0, 59, ErrMinuteInvalid)
 }
 
 // TIME-SECOND = 2DIGIT  ; 00-59
 func parseSecond(buff []byte, cursor *int, l int) (int, error) {
-	return syslogparser.Parse2Digits(buff, cursor, l, 0, 59, ErrSecondInvalid)
+	return message.Parse2Digits(buff, cursor, l, 0, 59, ErrSecondInvalid)
 }
 
 // TIME-SECFRAC = "." 1*6DIGIT
@@ -439,7 +439,7 @@ func parseSecFrac(buff []byte, cursor *int, l int) (float64, error) {
 		}
 
 		c := buff[to]
-		if !syslogparser.IsDigit(c) {
+		if !message.IsDigit(c) {
 			break
 		}
 	}

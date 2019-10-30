@@ -1,7 +1,7 @@
-package syslog
+package server
 
 import (
-	"github.com/sleepinggenius2/go-syslog/format"
+	"github.com/sleepinggenius2/go-syslog/server/format"
 )
 
 //The handler receive every syslog entry at Handle method
