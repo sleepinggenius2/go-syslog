@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sleepinggenius2/go-syslog/server/format"
+	"github.com/sleepinggenius2/go-syslog/server/transport"
 )
 
 type noopFormatter struct{}
@@ -69,21 +70,23 @@ func (c *fakePacketConn) SetReadDeadline(t time.Time) error {
 func (c *fakePacketConn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
+func (c *fakePacketConn) SetReadBuffer(bytes int) error {
+	return nil
+}
 
 func BenchmarkDatagramNoFormatting(b *testing.B) {
 	handler := &handlerCounter{expected: b.N, done: make(chan struct{})}
-	server := NewServer()
+	reader, writer := io.Pipe()
+	udp := transport.NewMockPacketTransport(handler, noopFormatter{})
+	udp.SetConn(&fakePacketConn{PipeReader: reader})
+	server := New(udp)
 	defer func() {
-		err := server.Kill()
+		err := server.Stop()
 		if err != nil {
 			panic(err)
 		}
 	}()
-	server.SetFormat(noopFormatter{})
-	server.SetHandler(handler)
-	reader, writer := io.Pipe()
-	server.goReceiveDatagrams(&fakePacketConn{PipeReader: reader})
-	server.goParseDatagrams()
+	_ = udp.Listen()
 	msg := []byte(exampleSyslog + "\n")
 	b.SetBytes(int64(len(msg)))
 	for i := 0; i < b.N; i++ {
@@ -97,24 +100,20 @@ func BenchmarkDatagramNoFormatting(b *testing.B) {
 
 func BenchmarkTCPNoFormatting(b *testing.B) {
 	handler := &handlerCounter{expected: b.N, done: make(chan struct{})}
-	server := NewServer()
+	tcp := transport.NewTCP("127.0.0.1:0", handler)
+	tcp.SetFormat(noopFormatter{})
+	server := New(tcp)
 	defer func() {
-		err := server.Kill()
+		err := server.Stop()
 		if err != nil {
 			panic(err)
 		}
 	}()
-	server.SetFormat(noopFormatter{})
-	server.SetHandler(handler)
-	err := server.ListenTCP("127.0.0.1:0")
+	err := server.Start()
 	if err != nil {
 		panic(err)
 	}
-	err = server.Boot()
-	if err != nil {
-		panic(err)
-	}
-	conn, _ := net.DialTimeout("tcp", server.listeners[0].Addr().String(), time.Second)
+	conn, _ := net.DialTimeout("tcp", tcp.Addr().String(), time.Second)
 	msg := []byte(exampleSyslog + "\n")
 	b.SetBytes(int64(len(msg)))
 	for i := 0; i < b.N; i++ {

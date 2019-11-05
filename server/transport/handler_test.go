@@ -1,4 +1,4 @@
-package server
+package transport
 
 import (
 	. "gopkg.in/check.v1"

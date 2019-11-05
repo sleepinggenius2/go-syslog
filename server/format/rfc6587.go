@@ -2,8 +2,6 @@ package format
 
 import (
 	"bufio"
-	"bytes"
-	"strconv"
 
 	"github.com/sleepinggenius2/go-syslog/common/message/rfc5424"
 )
@@ -23,23 +21,10 @@ func rfc6587ScannerSplit(data []byte, atEOF bool) (advance int, token []byte, er
 		return 0, nil, nil
 	}
 
-	if i := bytes.IndexByte(data, ' '); i > 0 {
-		pLength := data[0:i]
-		length, err := strconv.Atoi(string(pLength))
-		if err != nil {
-			if string(data[0:1]) == "<" {
-				// Assume this frame uses non-transparent-framing
-				return len(data), data, nil
-			}
-			return 0, nil, err
-		}
-		end := length + i + 1
-		if len(data) >= end {
-			// Return the frame with the length removed
-			return end, data[i+1 : end], nil
-		}
+	// Non-Transparent-Framing
+	if data[0] == '<' {
+		return len(data), data, nil
 	}
 
-	// Request more data
-	return 0, nil, nil
+	return rfc5425ScannerSplit(data, atEOF)
 }

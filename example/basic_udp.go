@@ -3,35 +3,29 @@ package main
 import (
 	"fmt"
 
-	"github.com/sleepinggenius2/go-syslog"
+	"github.com/sleepinggenius2/go-syslog/server"
+	"github.com/sleepinggenius2/go-syslog/server/transport"
 )
 
 func main() {
-	channel := make(syslog.LogPartsChannel)
-	handler := syslog.NewChannelHandler(channel)
+	channel := make(transport.LogPartsChannel)
+	handler := transport.NewChannelHandler(channel)
 
-	server := syslog.NewServer()
-	server.SetFormat(syslog.RFC5424)
-	server.SetHandler(handler)
-	err := server.ListenUDP("0.0.0.0:514")
-	if err != nil {
-		panic(err)
-	}
-	err = server.ListenTCP("0.0.0.0:514")
-	if err != nil {
-		panic(err)
-	}
+	udp := transport.NewUDP("0.0.0.0:514", handler)
+	udp.SetFormat(transport.RFC5424)
+	tcp := transport.NewTCP("0.0.0.0:514", handler)
+	syslog := server.New(udp, tcp)
 
-	err = server.Boot()
+	err := syslog.Start()
 	if err != nil {
 		panic(err)
 	}
 
-	go func(channel syslog.LogPartsChannel) {
+	go func(channel transport.LogPartsChannel) {
 		for logParts := range channel {
 			fmt.Println(logParts)
 		}
 	}(channel)
 
-	server.Wait()
+	syslog.Wait()
 }

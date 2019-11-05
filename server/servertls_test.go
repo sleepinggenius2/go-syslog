@@ -9,6 +9,8 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
+
+	"github.com/sleepinggenius2/go-syslog/server/transport"
 )
 
 func getServerConfig() *tls.Config {
@@ -56,15 +58,10 @@ func getClientConfig() *tls.Config {
 
 func (s *ServerSuite) TestTLS(c *C) {
 	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(RFC3164)
-	server.SetHandler(handler)
-	err := server.ListenTCPTLS("0.0.0.0:5143", getServerConfig())
-	if err != nil {
-		panic(err)
-	}
-
-	err = server.Boot()
+	tcp := transport.NewTCPTLS("0.0.0.0:5143", handler, getServerConfig())
+	tcp.SetFormat(transport.Automatic)
+	server := New(tcp)
+	err := server.Start()
 	if err != nil {
 		panic(err)
 	}
@@ -80,7 +77,7 @@ func (s *ServerSuite) TestTLS(c *C) {
 			panic(err)
 		}
 		time.Sleep(time.Second)
-		err = server.Kill()
+		err = server.Stop()
 		if err != nil {
 			panic(err)
 		}

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"io"
 	"net"
 	"testing"
@@ -10,29 +9,22 @@ import (
 	. "gopkg.in/check.v1"
 
 	"github.com/sleepinggenius2/go-syslog/server/format"
+	"github.com/sleepinggenius2/go-syslog/server/transport"
 )
 
 func Test(t *testing.T) { TestingT(t) }
 
-type ServerSuite struct {
-}
+type ServerSuite struct{}
 
 var _ = Suite(&ServerSuite{})
 var exampleSyslog = "<31>Dec 26 05:08:46 hostname tag[296]: content"
-var exampleSyslogNoTSTagHost = "<14>INFO     leaving (1) step postscripts"
-var exampleSyslogNoPriority = "Dec 26 05:08:46 hostname test with no priority - see rfc 3164 section 4.3.3"
-var exampleRFC5424Syslog = "<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su - ID47 - 'su root' failed for lonvick on /dev/pts/8"
 
 func (s *ServerSuite) TestTailFile(c *C) {
 	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(RFC3164)
-	server.SetHandler(handler)
-	err := server.ListenUDP("0.0.0.0:5141")
-	if err != nil {
-		panic(err)
-	}
-	err = server.ListenTCP("0.0.0.0:5141")
+	udp := transport.NewUDP("0.0.0.0:5141", handler)
+	udp.SetFormat(transport.RFC3164)
+	server := New(udp)
+	err := server.Start()
 	if err != nil {
 		panic(err)
 	}
@@ -48,16 +40,11 @@ func (s *ServerSuite) TestTailFile(c *C) {
 		}
 		time.Sleep(100 * time.Millisecond)
 
-		err = server.Kill()
+		err = server.Stop()
 		if err != nil {
 			panic(err)
 		}
 	}(server)
-
-	err = server.Boot()
-	if err != nil {
-		panic(err)
-	}
 	server.Wait()
 
 	c.Check(handler.LastLogParts.Hostname, Equals, "hostname")
@@ -128,188 +115,6 @@ func (c *ConnMock) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-func (s *ServerSuite) TestConnectionClose(c *C) {
-	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(RFC3164)
-	server.SetHandler(handler)
-	con := ConnMock{ReadData: []byte(exampleSyslog)}
-	server.goScanConnection(&con)
-	server.Wait()
-	c.Check(con.isClosed, Equals, true)
-}
-
-func (s *ServerSuite) TestConnectionUDPKill(c *C) {
-	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(RFC5424)
-	server.SetHandler(handler)
-	con := ConnMock{ReadData: []byte(exampleSyslog)}
-	server.goScanConnection(&con)
-	err := server.Kill()
-	if err != nil {
-		panic(err)
-	}
-	server.Wait()
-	c.Check(con.isClosed, Equals, true)
-}
-
-func (s *ServerSuite) TestTcpTimeout(c *C) {
-	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(RFC3164)
-	server.SetHandler(handler)
-	server.SetTimeout(10)
-	con := ConnMock{ReadData: []byte(exampleSyslog), ReturnTimeout: true}
-	c.Check(con.isReadDeadline, Equals, false)
-	server.goScanConnection(&con)
-	server.Wait()
-	c.Check(con.isReadDeadline, Equals, true)
-	c.Check(handler.LastLogParts.Valid, Equals, false)
-	c.Check(handler.LastMessageLength, Equals, int64(0))
-	c.Check(handler.LastError, IsNil)
-}
-
-func (s *ServerSuite) TestUDP3164(c *C) {
-	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(RFC3164)
-	server.SetHandler(handler)
-	server.SetTimeout(10)
-	server.goParseDatagrams()
-	server.datagramChannel <- DatagramMessage{[]byte(exampleSyslog), "0.0.0.0"}
-	close(server.datagramChannel)
-	server.Wait()
-	c.Check(handler.LastLogParts.Hostname, Equals, "hostname")
-	c.Check(handler.LastLogParts.AppName, Equals, "tag")
-	c.Check(handler.LastLogParts.Message, Equals, "content")
-	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
-	c.Check(handler.LastError, IsNil)
-}
-
-func (s *ServerSuite) TestUDP3164NoTag(c *C) {
-	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(RFC3164)
-	server.SetHandler(handler)
-	server.SetTimeout(10)
-	server.goParseDatagrams()
-	server.datagramChannel <- DatagramMessage{[]byte(exampleSyslogNoTSTagHost), "127.0.0.1:45789"}
-	close(server.datagramChannel)
-	server.Wait()
-	c.Check(handler.LastLogParts.Hostname, Equals, "127.0.0.1")
-	c.Check(handler.LastLogParts.AppName, Equals, "")
-	c.Check(handler.LastLogParts.Message, Equals, "INFO     leaving (1) step postscripts")
-	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslogNoTSTagHost)))
-	c.Check(handler.LastError, IsNil)
-}
-
-func (s *ServerSuite) TestUDPAutomatic3164NoPriority(c *C) {
-	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(Automatic)
-	server.SetHandler(handler)
-	server.SetTimeout(10)
-	server.goParseDatagrams()
-	server.datagramChannel <- DatagramMessage{[]byte(exampleSyslogNoPriority), "127.0.0.1:45789"}
-	close(server.datagramChannel)
-	server.Wait()
-	c.Check(handler.LastLogParts.Hostname, Equals, "127.0.0.1")
-	c.Check(handler.LastLogParts.AppName, Equals, "")
-	c.Check(handler.LastLogParts.Priority, Equals, 13)
-	c.Check(handler.LastLogParts.Message, Equals, exampleSyslogNoPriority)
-	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslogNoPriority)))
-	c.Check(handler.LastError, IsNil)
-}
-
-func (s *ServerSuite) TestUDP6587(c *C) {
-	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(RFC6587)
-	server.SetHandler(handler)
-	server.SetTimeout(10)
-	server.goParseDatagrams()
-	framedSyslog := []byte(fmt.Sprintf("%d %s", len(exampleRFC5424Syslog), exampleRFC5424Syslog))
-	server.datagramChannel <- DatagramMessage{[]byte(framedSyslog), "0.0.0.0"}
-	close(server.datagramChannel)
-	server.Wait()
-	c.Check(handler.LastLogParts.Hostname, Equals, "mymachine.example.com")
-	c.Check(handler.LastLogParts.Facility, Equals, 4)
-	c.Check(handler.LastLogParts.Message, Equals, "'su root' failed for lonvick on /dev/pts/8")
-	c.Check(handler.LastMessageLength, Equals, int64(len(exampleRFC5424Syslog)))
-	c.Check(handler.LastError, IsNil)
-}
-
-func (s *ServerSuite) TestUDPAutomatic3164(c *C) {
-	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(Automatic)
-	server.SetHandler(handler)
-	server.SetTimeout(10)
-	server.goParseDatagrams()
-	server.datagramChannel <- DatagramMessage{[]byte(exampleSyslog), "0.0.0.0"}
-	close(server.datagramChannel)
-	server.Wait()
-	c.Check(handler.LastLogParts.Hostname, Equals, "hostname")
-	c.Check(handler.LastLogParts.AppName, Equals, "tag")
-	c.Check(handler.LastLogParts.Message, Equals, "content")
-	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
-	c.Check(handler.LastError, IsNil)
-}
-
-func (s *ServerSuite) TestUDPAutomatic5424(c *C) {
-	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(Automatic)
-	server.SetHandler(handler)
-	server.SetTimeout(10)
-	server.goParseDatagrams()
-	server.datagramChannel <- DatagramMessage{[]byte(exampleRFC5424Syslog), "0.0.0.0"}
-	close(server.datagramChannel)
-	server.Wait()
-	c.Check(handler.LastLogParts.Hostname, Equals, "mymachine.example.com")
-	c.Check(handler.LastLogParts.Facility, Equals, 4)
-	c.Check(handler.LastLogParts.Message, Equals, "'su root' failed for lonvick on /dev/pts/8")
-	c.Check(handler.LastMessageLength, Equals, int64(len(exampleRFC5424Syslog)))
-	c.Check(handler.LastError, IsNil)
-}
-
-func (s *ServerSuite) TestUDPAutomatic3164Plus6587OctetCount(c *C) {
-	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(Automatic)
-	server.SetHandler(handler)
-	server.SetTimeout(10)
-	server.goParseDatagrams()
-	framedSyslog := []byte(fmt.Sprintf("%d %s", len(exampleSyslog), exampleSyslog))
-	server.datagramChannel <- DatagramMessage{[]byte(framedSyslog), "0.0.0.0"}
-	close(server.datagramChannel)
-	server.Wait()
-	c.Check(handler.LastLogParts.Hostname, Equals, "hostname")
-	c.Check(handler.LastLogParts.AppName, Equals, "tag")
-	c.Check(handler.LastLogParts.Message, Equals, "content")
-	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
-	c.Check(handler.LastError, IsNil)
-}
-
-func (s *ServerSuite) TestUDPAutomatic5424Plus6587OctetCount(c *C) {
-	handler := new(HandlerMock)
-	server := NewServer()
-	server.SetFormat(Automatic)
-	server.SetHandler(handler)
-	server.SetTimeout(10)
-	server.goParseDatagrams()
-	framedSyslog := []byte(fmt.Sprintf("%d %s", len(exampleRFC5424Syslog), exampleRFC5424Syslog))
-	server.datagramChannel <- DatagramMessage{[]byte(framedSyslog), "0.0.0.0"}
-	close(server.datagramChannel)
-	server.Wait()
-	c.Check(handler.LastLogParts.Hostname, Equals, "mymachine.example.com")
-	c.Check(handler.LastLogParts.Facility, Equals, 4)
-	c.Check(handler.LastLogParts.Message, Equals, "'su root' failed for lonvick on /dev/pts/8")
-	c.Check(handler.LastMessageLength, Equals, int64(len(exampleRFC5424Syslog)))
-	c.Check(handler.LastError, IsNil)
-}
-
 type handlerSlow struct {
 	*handlerCounter
 	contents []string
@@ -325,19 +130,14 @@ func (s *handlerSlow) Handle(logParts format.LogParts, msgLen int64, err error) 
 
 func (s *ServerSuite) TestUDPRace(c *C) {
 	handler := &handlerSlow{handlerCounter: &handlerCounter{expected: 3, done: make(chan struct{})}}
-	server := NewServer()
-	server.SetFormat(Automatic)
-	server.SetHandler(handler)
-	server.SetTimeout(10)
-	err := server.ListenUDP("127.0.0.1:0")
+	udp := transport.NewUDP("127.0.0.1:0", handler)
+	udp.SetFormat(transport.Automatic)
+	server := New(udp)
+	err := server.Start()
 	if err != nil {
 		panic(err)
 	}
-	err = server.Boot()
-	if err != nil {
-		panic(err)
-	}
-	conn, err := net.Dial("udp", server.connections[0].LocalAddr().String())
+	conn, err := net.Dial("udp", udp.LocalAddr().String())
 	c.Assert(err, IsNil)
 	_, err = conn.Write([]byte(exampleSyslog + "1"))
 	c.Assert(err, IsNil)
@@ -352,19 +152,15 @@ func (s *ServerSuite) TestUDPRace(c *C) {
 
 func (s *ServerSuite) TestTCPRace(c *C) {
 	handler := &handlerSlow{handlerCounter: &handlerCounter{expected: 3, done: make(chan struct{})}}
-	server := NewServer()
-	server.SetFormat(Automatic)
-	server.SetHandler(handler)
-	server.SetTimeout(10)
-	err := server.ListenTCP("127.0.0.1:0")
+	tcp := transport.NewTCP("127.0.0.1:0", handler)
+	tcp.SetFormat(transport.Automatic)
+	tcp.SetTimeout(10 * time.Millisecond)
+	server := New(tcp)
+	err := server.Start()
 	if err != nil {
 		panic(err)
 	}
-	err = server.Boot()
-	if err != nil {
-		panic(err)
-	}
-	conn, err := net.Dial("tcp", server.listeners[0].Addr().String())
+	conn, err := net.Dial("tcp", tcp.Addr().String())
 	c.Assert(err, IsNil)
 	_, err = conn.Write([]byte(exampleSyslog + "1\n"))
 	c.Assert(err, IsNil)
