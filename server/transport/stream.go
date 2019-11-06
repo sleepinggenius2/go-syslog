@@ -128,7 +128,7 @@ func (t *BaseStreamTransport) scan(scanCloser *ScanCloser, client string, tlsPee
 			_ = scanCloser.closer.SetReadDeadline(time.Now().Add(t.readTimeout))
 		}
 		if scanCloser.Scan() {
-			parser(t.format, t.handler, scanCloser.Bytes(), client, tlsPeer)
+			t.parser(scanCloser.Bytes(), client, tlsPeer)
 		} else {
 			return
 		}

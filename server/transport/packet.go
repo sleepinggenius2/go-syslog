@@ -129,10 +129,10 @@ func (t *BasePacketTransport) goParsePackets() {
 			}
 			if sf := t.format.GetSplitFunc(); sf != nil {
 				if _, token, err := sf(msg.message, true); err == nil {
-					parser(t.format, t.handler, token, msg.client, "")
+					t.parser(token, msg.client, "")
 				}
 			} else {
-				parser(t.format, t.handler, msg.message, msg.client, "")
+				t.parser(msg.message, msg.client, "")
 			}
 			packetBufferPool.Put(msg.message[:cap(msg.message)])
 		}

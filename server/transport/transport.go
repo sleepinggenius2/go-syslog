@@ -31,26 +31,33 @@ type Transport interface {
 	Close() error
 	GetFormat() format.Format
 	GetHandler() Handler
+	GetLocation() *time.Location
 	Listen() error
 	SetFormat(f format.Format)
 	SetHandler(handler Handler)
+	SetLocation(*time.Location)
 	SetSignals(wg *sync.WaitGroup, doneCh <-chan struct{})
 }
 
 type BaseTransport struct {
-	addr    string
-	doneCh  <-chan struct{}
-	format  format.Format
-	handler Handler
-	wg      *sync.WaitGroup
+	addr     string
+	doneCh   <-chan struct{}
+	format   format.Format
+	handler  Handler
+	location *time.Location
+	wg       *sync.WaitGroup
 }
 
-func (t *BaseTransport) GetFormat() format.Format {
+func (t BaseTransport) GetFormat() format.Format {
 	return t.format
 }
 
-func (t *BaseTransport) GetHandler() Handler {
+func (t BaseTransport) GetHandler() Handler {
 	return t.handler
+}
+
+func (t BaseTransport) GetLocation() *time.Location {
+	return t.location
 }
 
 func (t *BaseTransport) SetFormat(f format.Format) {
@@ -61,9 +68,33 @@ func (t *BaseTransport) SetHandler(handler Handler) {
 	t.handler = handler
 }
 
+func (t *BaseTransport) SetLocation(loc *time.Location) {
+	t.location = loc
+}
+
 func (t *BaseTransport) SetSignals(wg *sync.WaitGroup, doneCh <-chan struct{}) {
 	t.wg = wg
 	t.doneCh = doneCh
+}
+
+func (t BaseTransport) parser(line []byte, client string, tlsPeer string) {
+	parser := t.format.GetParser(line)
+	if t.location != nil {
+		parser.Location(t.location)
+	}
+
+	err := parser.Parse()
+	logParts := parser.Dump()
+	logParts.Client = client
+	if logParts.Hostname == "" {
+		logParts.Hostname, _, err = net.SplitHostPort(client)
+		if err != nil {
+			logParts.Hostname = client
+		}
+	}
+	logParts.TlsPeer = tlsPeer
+
+	t.handler.Handle(logParts, int64(len(line)), err)
 }
 
 func newBaseTransport(addr string, handler Handler, f format.Format) *BaseTransport {
@@ -72,21 +103,4 @@ func newBaseTransport(addr string, handler Handler, f format.Format) *BaseTransp
 		format:  f,
 		handler: handler,
 	}
-}
-
-func parser(f format.Format, handler Handler, line []byte, client string, tlsPeer string) {
-	parser := f.GetParser(line)
-
-	err := parser.Parse()
-	logParts := parser.Dump()
-	logParts.Client = client
-	if logParts.Hostname == "" && (f == RFC3164 || f == Automatic) {
-		logParts.Hostname, _, err = net.SplitHostPort(client)
-		if err != nil {
-			logParts.Hostname = client
-		}
-	}
-	logParts.TlsPeer = tlsPeer
-
-	handler.Handle(logParts, int64(len(line)), err)
 }
