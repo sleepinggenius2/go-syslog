@@ -8,6 +8,9 @@ import (
 	"math"
 	"strconv"
 	"time"
+	"unicode/utf8"
+
+	"github.com/pkg/errors"
 
 	"github.com/sleepinggenius2/go-syslog/common/message"
 )
@@ -33,7 +36,7 @@ type Parser struct {
 	cursor         int
 	l              int
 	header         header
-	structuredData string
+	structuredData message.StructuredData
 	message        string
 }
 
@@ -254,7 +257,7 @@ func (p *Parser) parseMsgId() (string, error) {
 	return parseUpToLen(p.buff, &p.cursor, p.l, 32, ErrInvalidMsgId)
 }
 
-func (p *Parser) parseStructuredData() (string, error) {
+func (p *Parser) parseStructuredData() (message.StructuredData, error) {
 	return parseStructuredData(p.buff, &p.cursor, p.l)
 }
 
@@ -523,53 +526,186 @@ func toNSec(sec float64) (int, error) {
 	return fracInt, nil
 }
 
-// ------------------------------------------------
 // https://tools.ietf.org/html/rfc5424#section-6.3
-// ------------------------------------------------
-
-func parseStructuredData(buff []byte, cursor *int, l int) (string, error) {
-	var sdData string
-	var found bool
-
+func parseStructuredData(buff []byte, cursor *int, l int) (message.StructuredData, error) {
+	// No more data
 	if *cursor >= l {
-		return "-", nil
+		return nil, nil
 	}
 
+	// Check for proper NILVALUE
 	if buff[*cursor] == message.NILVALUE {
 		*cursor++
-		return "-", nil
-	}
-
-	if buff[*cursor] != '[' {
-		return sdData, ErrNoStructuredData
-	}
-
-	from := *cursor
-	to := from
-
-	for ; to < l; to++ {
-		if found {
-			break
+		if *cursor < l && buff[*cursor] != ' ' {
+			return nil, ErrNoStructuredData
 		}
+		return nil, nil
+	}
 
-		b := buff[to]
+	// Check that there is a starting open bracket
+	if buff[*cursor] != '[' {
+		return nil, ErrNoStructuredData
+	}
 
-		if b == ']' {
-			switch t := to + 1; {
-			case t == l:
-				found = true
-			case t <= l && buff[t] == ' ':
-				found = true
+	out := make(message.StructuredData)
+	from, to := *cursor, *cursor
+
+	var (
+		offset, size                              int
+		inElement, inID, inParam, inName, inValue bool
+		currID                                    message.SDID
+		currName                                  string
+		ch                                        rune
+	)
+loop:
+	for ; to < l-offset; to += size {
+		if inValue {
+			ch, size = utf8.DecodeRune(buff[to+offset:])
+			if offset > 0 {
+				copy(buff[to:], buff[to+offset:to+offset+size])
+			}
+		} else {
+			ch, size = rune(buff[to]), 1
+		}
+		switch ch {
+		case '\\':
+			if !inValue {
+				return nil, errors.New("Invalid '\\'")
+			}
+			if to < l-1 {
+				switch buff[to+1] {
+				case '"', '\\', ']':
+					offset++
+					if to < l-offset {
+						buff[to] = buff[to+offset]
+					}
+				}
+			}
+		case '[':
+			switch {
+			case inID || inName || inValue:
+				break
+			case inElement:
+				return nil, errors.New("Invalid '['")
+			default:
+				inElement = true
+				inID = true
+				from = to + 1
+			}
+		case ']':
+			switch {
+			case inID && to > from:
+				currID = message.SDID(buff[from:to])
+				out[currID] = make(message.SDParams)
+				inID = false
+				inElement = false
+			case inValue && currName != "":
+				return nil, errors.New("Must escape ']' inside of PARAM-VALUE")
+			case inParam:
+				if from == to {
+					return nil, errors.New("Missing SD-PARAM")
+				}
+				if inName || currName != "" {
+					return nil, errors.New("Missing PARAM-VALUE")
+				}
+				fallthrough
+			case inElement:
+				if from == to {
+					return nil, errors.New("Empty SD-ELEMENT")
+				}
+				currID = ""
+				inParam = false
+				inElement = false
+			default:
+				return nil, errors.New("Cannot have ']' outside of SD-ELEMENT")
+			}
+		case '=':
+			switch {
+			case inValue:
+				break
+			case inName:
+				currName = string(buff[from:to])
+				inName = false
+				from = to + 1
+			case inID:
+				return nil, errors.New("SD-ID cannot contain '='")
+			case !inElement:
+				return nil, errors.New("Cannot have '=' outside of SD-ELEMENT")
+			}
+		case ' ':
+			switch {
+			case inID:
+				if from == to {
+					return nil, errors.New("Missing SD-ID")
+				}
+				currID = message.SDID(buff[from:to])
+				out[currID] = make(message.SDParams)
+				inID = false
+				inParam = true
+				inName = true
+				from = to + 1
+			case inName:
+				return nil, errors.New("PARAM-NAME cannot contain ' '")
+			case inValue:
+				break
+			case inParam:
+				if currName != "" {
+					return nil, errors.New("Missing PARAM-VALUE")
+				}
+				inName = true
+				from = to + 1
+			case !inElement:
+				break loop
+			}
+		case '"':
+			switch {
+			case inName:
+				return nil, errors.New("PARAM-NAME cannot contain '\"'")
+			case inID:
+				return nil, errors.New("SD-ID cannot contain '\"'")
+			case inValue:
+				out[currID][currName] = string(buff[from:to])
+				currName = ""
+				inValue = false
+				to += offset
+				offset = 0
+			case inParam:
+				inValue = true
+				from = to + 1
+			case !inElement:
+				return nil, errors.New("Cannot have '\"' outside of SD-ELEMENT")
+			}
+		default:
+			if !inElement {
+				return nil, errors.New("Invalid character outside of SD-ELEMENT")
+			}
+			if inID {
+				// Check for 1*32PRINTUSASCII
+				if to-from == 32 {
+					return nil, errors.New("SD-ID length must be <= 32")
+				}
+				// Check for PRINTUSASCII = %d33-126
+				if buff[to] < 33 || buff[to] > 126 {
+					return nil, errors.New("SD-ID must contain only PRINTUSASCII characters")
+				}
+			}
+			if inName {
+				// Check for 1*32PRINTUSASCII
+				if to-from == 32 {
+					return nil, errors.New("PARAM-NAME length must be <= 32")
+				}
+				// Check for PRINTUSASCII = %d33-126
+				if buff[to] < 33 || buff[to] > 126 {
+					return nil, errors.New("PARAM-NAME must contain only PRINTUSASCII characters")
+				}
 			}
 		}
 	}
-
-	if found {
-		*cursor = to
-		return string(buff[from:to]), nil
+	if inElement {
+		return nil, errors.New("Unterminated SD-ELEMENT")
 	}
-
-	return sdData, ErrNoStructuredData
+	*cursor = to
+	return out, nil
 }
 
 func parseUpToLen(buff []byte, cursor *int, l int, maxLen int, e error) (string, error) {

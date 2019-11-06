@@ -49,6 +49,10 @@ type Priority struct {
 	S Severity
 }
 
+type SDID string
+type SDParams map[string]string
+type StructuredData map[SDID]SDParams
+
 type LogParts struct {
 	AppName        string
 	Client         string
@@ -60,7 +64,7 @@ type LogParts struct {
 	ProcID         string
 	Received       time.Time
 	Severity       Severity
-	StructuredData string
+	StructuredData StructuredData
 	Timestamp      time.Time
 	TlsPeer        string
 	Version        int

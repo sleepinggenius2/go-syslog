@@ -27,7 +27,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 		// with STRUCTURED-DATA
 		`<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"] An application event log entry...`,
 		// STRUCTURED-DATA Only
-		`<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource= "Application" eventID="1011"][examplePriority@32473 class="high"]`,
+		`<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"][examplePriority@32473 class="high"]`,
 		// STRUCTURED-DATA Only
 		`<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 `,
 	}
@@ -49,7 +49,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			AppName:        "su",
 			ProcID:         "-",
 			MsgID:          "ID47",
-			StructuredData: "-",
+			StructuredData: nil,
 			Message:        "'su root' failed for lonvick on /dev/pts/8",
 		},
 		message.LogParts{
@@ -63,7 +63,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			AppName:        "myproc",
 			ProcID:         "8710",
 			MsgID:          "-",
-			StructuredData: "-",
+			StructuredData: nil,
 			Message:        "%% It's time to make the do-nuts.",
 		},
 		message.LogParts{
@@ -77,22 +77,51 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			AppName:        "012345678901234567890123456789012345678901234567",
 			ProcID:         "8710",
 			MsgID:          "-",
-			StructuredData: "-",
+			StructuredData: nil,
 			Message:        "%% It's time to make the do-nuts.",
 		},
 		message.LogParts{
-			Priority:       165,
-			Facility:       20,
-			Severity:       5,
-			Version:        1,
-			Timestamp:      time.Date(2003, time.October, 11, 22, 14, 15, 3*10e5, time.UTC),
-			Received:       now,
-			Hostname:       "mymachine.example.com",
-			AppName:        "evntslog",
-			ProcID:         "-",
-			MsgID:          "ID47",
-			StructuredData: `[exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"]`,
-			Message:        "An application event log entry...",
+			Priority:  165,
+			Facility:  20,
+			Severity:  5,
+			Version:   1,
+			Timestamp: time.Date(2003, time.October, 11, 22, 14, 15, 3*10e5, time.UTC),
+			Received:  now,
+			Hostname:  "mymachine.example.com",
+			AppName:   "evntslog",
+			ProcID:    "-",
+			MsgID:     "ID47",
+			StructuredData: message.StructuredData{
+				"exampleSDID@32473": message.SDParams{
+					"iut":         "3",
+					"eventSource": "Application",
+					"eventID":     "1011",
+				},
+			},
+			Message: "An application event log entry...",
+		},
+		message.LogParts{
+			Priority:  165,
+			Facility:  20,
+			Severity:  5,
+			Version:   1,
+			Timestamp: time.Date(2003, time.October, 11, 22, 14, 15, 3*10e5, time.UTC),
+			Received:  now,
+			Hostname:  "mymachine.example.com",
+			AppName:   "evntslog",
+			ProcID:    "-",
+			MsgID:     "ID47",
+			StructuredData: message.StructuredData{
+				"exampleSDID@32473": message.SDParams{
+					"iut":         "3",
+					"eventSource": "Application",
+					"eventID":     "1011",
+				},
+				"examplePriority@32473": message.SDParams{
+					"class": "high",
+				},
+			},
+			Message: "",
 		},
 		message.LogParts{
 			Priority:       165,
@@ -105,21 +134,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			AppName:        "evntslog",
 			ProcID:         "-",
 			MsgID:          "ID47",
-			StructuredData: `[exampleSDID@32473 iut="3" eventSource= "Application" eventID="1011"][examplePriority@32473 class="high"]`,
-			Message:        "",
-		},
-		message.LogParts{
-			Priority:       165,
-			Facility:       20,
-			Severity:       5,
-			Version:        1,
-			Timestamp:      time.Date(2003, time.October, 11, 22, 14, 15, 3*10e5, time.UTC),
-			Received:       now,
-			Hostname:       "mymachine.example.com",
-			AppName:        "evntslog",
-			ProcID:         "-",
-			MsgID:          "ID47",
-			StructuredData: "-",
+			StructuredData: nil,
 			Message:        "",
 		},
 	}
@@ -733,32 +748,53 @@ func (s *Rfc5424TestSuite) TestParseMsgId_TooLong(c *C) {
 
 func (s *Rfc5424TestSuite) TestParseStructuredData_NilValue(c *C) {
 	// > 32chars
-	buff := []byte("-")
-	sdData := "-"
+	buff := []byte{'-'}
+	sdData := message.StructuredData(nil)
 
 	s.assertParseSdName(c, sdData, buff, 1, nil)
 }
 
 func (s *Rfc5424TestSuite) TestParseStructuredData_SingleStructuredData(c *C) {
-	sdData := `[exampleSDID@32473 iut="3" eventSource="Application"eventID="1011"]`
-	buff := []byte(sdData)
+	buff := []byte(`[exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"]`)
+	sdData := message.StructuredData{
+		"exampleSDID@32473": message.SDParams{
+			"iut":         "3",
+			"eventSource": "Application",
+			"eventID":     "1011",
+		},
+	}
 
 	s.assertParseSdName(c, sdData, buff, len(buff), nil)
 }
 
 func (s *Rfc5424TestSuite) TestParseStructuredData_MultipleStructuredData(c *C) {
-	sdData := `[exampleSDID@32473 iut="3" eventSource="Application"eventID="1011"][examplePriority@32473 class="high"]`
-	buff := []byte(sdData)
+	buff := []byte(`[exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"][examplePriority@32473 class="high"]`)
+	sdData := message.StructuredData{
+		"exampleSDID@32473": message.SDParams{
+			"iut":         "3",
+			"eventSource": "Application",
+			"eventID":     "1011",
+		},
+		"examplePriority@32473": message.SDParams{
+			"class": "high",
+		},
+	}
 
 	s.assertParseSdName(c, sdData, buff, len(buff), nil)
 }
 
 func (s *Rfc5424TestSuite) TestParseStructuredData_MultipleStructuredDataInvalid(c *C) {
-	a := `[exampleSDID@32473 iut="3" eventSource="Application"eventID="1011"]`
-	sdData := a + ` [examplePriority@32473 class="high"]`
-	buff := []byte(sdData)
+	a := `[exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"]`
+	buff := []byte(a + ` [examplePriority@32473 class="high"]`)
+	sdData := message.StructuredData{
+		"exampleSDID@32473": message.SDParams{
+			"iut":         "3",
+			"eventSource": "Application",
+			"eventID":     "1011",
+		},
+	}
 
-	s.assertParseSdName(c, a, buff, len(a), nil)
+	s.assertParseSdName(c, sdData, buff, len(a), nil)
 }
 
 // -------------
@@ -903,12 +939,12 @@ func (s *Rfc5424TestSuite) assertParseMsgId(c *C, msgId string, b []byte, expC i
 	c.Assert(p.cursor, Equals, expC)
 }
 
-func (s *Rfc5424TestSuite) assertParseSdName(c *C, sdData string, b []byte, expC int, e error) {
+func (s *Rfc5424TestSuite) assertParseSdName(c *C, sdData message.StructuredData, b []byte, expC int, e error) {
 	cursor := 0
 	obtained, err := parseStructuredData(b, &cursor, len(b))
 
 	c.Assert(err, Equals, e)
-	c.Assert(obtained, Equals, sdData)
+	c.Assert(obtained, DeepEquals, sdData)
 	c.Assert(cursor, Equals, expC)
 }
 
