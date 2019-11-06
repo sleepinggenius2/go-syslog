@@ -10,6 +10,7 @@ import (
 const (
 	PRI_PART_START = '<'
 	PRI_PART_END   = '>'
+	NILVALUE       = '-'
 
 	NO_VERSION = -1
 )
@@ -44,20 +45,21 @@ type ParserError struct {
 
 type Priority struct {
 	P int
-	F int
-	S int
+	F Facility
+	S Severity
 }
 
 type LogParts struct {
 	AppName        string
 	Client         string
-	Facility       int
+	Facility       Facility
 	Hostname       string
 	Message        string
 	MsgID          string
 	Priority       int
 	ProcID         string
-	Severity       int
+	Received       time.Time
+	Severity       Severity
 	StructuredData string
 	Timestamp      time.Time
 	TlsPeer        string
@@ -139,14 +141,18 @@ func IsDigit(c byte) bool {
 	return c >= '0' && c <= '9'
 }
 
+func IsNilValue(s string) bool {
+	return len(s) == 1 && s[0] == NILVALUE
+}
+
 func newPriority(p int) Priority {
 	// The Priority value is calculated by first multiplying the Facility
 	// number by 8 and then adding the numerical value of the Severity.
 
 	return Priority{
 		P: p,
-		F: p / 8,
-		S: p % 8,
+		F: Facility(p / 8),
+		S: Severity(p % 8),
 	}
 }
 

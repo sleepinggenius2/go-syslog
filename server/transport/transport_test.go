@@ -9,6 +9,7 @@ import (
 
 	. "gopkg.in/check.v1"
 
+	"github.com/sleepinggenius2/go-syslog/common/message"
 	"github.com/sleepinggenius2/go-syslog/server/format"
 )
 
@@ -192,7 +193,7 @@ func (s *TransportSuite) TestUDP6587(c *C) {
 	udp.SendMessage(PacketMessage{[]byte(framedSyslog), "0.0.0.0"})
 	udp.Wait()
 	c.Check(handler.LastLogParts.Hostname, Equals, "mymachine.example.com")
-	c.Check(handler.LastLogParts.Facility, Equals, 4)
+	c.Check(handler.LastLogParts.Facility, Equals, message.FacilityAuth)
 	c.Check(handler.LastLogParts.Message, Equals, "'su root' failed for lonvick on /dev/pts/8")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleRFC5424Syslog)))
 	c.Check(handler.LastError, IsNil)
@@ -218,7 +219,7 @@ func (s *TransportSuite) TestUDPAutomatic5424(c *C) {
 	udp.SendMessage(PacketMessage{[]byte(exampleRFC5424Syslog), "0.0.0.0"})
 	udp.Wait()
 	c.Check(handler.LastLogParts.Hostname, Equals, "mymachine.example.com")
-	c.Check(handler.LastLogParts.Facility, Equals, 4)
+	c.Check(handler.LastLogParts.Facility, Equals, message.FacilityAuth)
 	c.Check(handler.LastLogParts.Message, Equals, "'su root' failed for lonvick on /dev/pts/8")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleRFC5424Syslog)))
 	c.Check(handler.LastError, IsNil)
@@ -246,7 +247,7 @@ func (s *TransportSuite) TestUDPAutomatic5424Plus6587OctetCount(c *C) {
 	udp.SendMessage(PacketMessage{[]byte(framedSyslog), "0.0.0.0"})
 	udp.Wait()
 	c.Check(handler.LastLogParts.Hostname, Equals, "mymachine.example.com")
-	c.Check(handler.LastLogParts.Facility, Equals, 4)
+	c.Check(handler.LastLogParts.Facility, Equals, message.FacilityAuth)
 	c.Check(handler.LastLogParts.Message, Equals, "'su root' failed for lonvick on /dev/pts/8")
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleRFC5424Syslog)))
 	c.Check(handler.LastError, IsNil)

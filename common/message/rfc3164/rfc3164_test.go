@@ -43,8 +43,14 @@ func (s *Rfc3164TestSuite) TestParser_Valid(c *C) {
 	now := time.Now()
 
 	obtained := p.Dump()
+
+	obtainedTime := obtained.Received
+	s.assertTimeIsCloseToNow(c, obtainedTime)
+	obtained.Received = now // XXX: Need to mock out time to test this fully
+
 	expected := message.LogParts{
 		Timestamp: time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
+		Received:  now,
 		Hostname:  "mymachine",
 		AppName:   "very.large.syslog.message.tag",
 		ProcID:    "",
@@ -76,8 +82,14 @@ func (s *Rfc3164TestSuite) TestParser_ValidNoTag(c *C) {
 	now := time.Now()
 
 	obtained := p.Dump()
+
+	obtainedTime := obtained.Received
+	s.assertTimeIsCloseToNow(c, obtainedTime)
+	obtained.Received = now // XXX: Need to mock out time to test this fully
+
 	expected := message.LogParts{
 		Timestamp: time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
+		Received:  now,
 		Hostname:  "mymachine",
 		AppName:   "",
 		ProcID:    "",
@@ -113,10 +125,15 @@ func (s *Rfc3164TestSuite) TestParser_NoTimestamp(c *C) {
 
 	obtainedTime := obtained.Timestamp
 	s.assertTimeIsCloseToNow(c, obtainedTime)
-
 	obtained.Timestamp = now // XXX: Need to mock out time to test this fully
+
+	obtainedTime = obtained.Received
+	s.assertTimeIsCloseToNow(c, obtainedTime)
+	obtained.Received = now // XXX: Need to mock out time to test this fully
+
 	expected := message.LogParts{
 		Timestamp: now,
+		Received:  now,
 		Hostname:  "",
 		AppName:   "",
 		ProcID:    "",
@@ -149,12 +166,18 @@ func (s *Rfc3164TestSuite) TestParser_NoPriority(c *C) {
 	now := time.Now()
 
 	obtained := p.Dump()
+
 	obtainedTime := obtained.Timestamp
 	s.assertTimeIsCloseToNow(c, obtainedTime)
-
 	obtained.Timestamp = now // XXX: Need to mock out time to test this fully
+
+	obtainedTime = obtained.Received
+	s.assertTimeIsCloseToNow(c, obtainedTime)
+	obtained.Received = now // XXX: Need to mock out time to test this fully
+
 	expected := message.LogParts{
 		Timestamp: now,
+		Received:  now,
 		Hostname:  "",
 		AppName:   "",
 		ProcID:    "",
@@ -205,9 +228,18 @@ func (s *Rfc3164TestSuite) TestParser_ValidRFC3339Timestamp(c *C) {
 	p := NewParser(buff)
 	err := p.Parse()
 	c.Assert(err, IsNil)
+
+	now := time.Now()
+
 	obtained := p.Dump()
+
+	obtainedTime := obtained.Received
+	s.assertTimeIsCloseToNow(c, obtainedTime)
+	obtained.Received = now // XXX: Need to mock out time to test this fully
+
 	expected := message.LogParts{
 		Timestamp: time.Date(2018, time.January, 12, 22, 14, 15, 0, time.UTC),
+		Received:  now,
 		Hostname:  "mymachine",
 		AppName:   "app",
 		ProcID:    "101",

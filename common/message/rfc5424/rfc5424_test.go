@@ -35,6 +35,8 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 	tmpTs, err := time.Parse("-07:00", "-07:00")
 	c.Assert(err, IsNil)
 
+	now := time.Now()
+
 	expected := []message.LogParts{
 		message.LogParts{
 			Priority:       34,
@@ -42,6 +44,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			Severity:       2,
 			Version:        1,
 			Timestamp:      time.Date(2003, time.October, 11, 22, 14, 15, 3*10e5, time.UTC),
+			Received:       now,
 			Hostname:       "mymachine.example.com",
 			AppName:        "su",
 			ProcID:         "-",
@@ -55,6 +58,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			Severity:       5,
 			Version:        1,
 			Timestamp:      time.Date(2003, time.August, 24, 5, 14, 15, 3*10e2, tmpTs.Location()),
+			Received:       now,
 			Hostname:       "192.0.2.1",
 			AppName:        "myproc",
 			ProcID:         "8710",
@@ -68,6 +72,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			Severity:       5,
 			Version:        1,
 			Timestamp:      time.Date(2003, time.August, 24, 5, 14, 15, 3*10e2, tmpTs.Location()),
+			Received:       now,
 			Hostname:       "192.0.2.1",
 			AppName:        "012345678901234567890123456789012345678901234567",
 			ProcID:         "8710",
@@ -81,6 +86,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			Severity:       5,
 			Version:        1,
 			Timestamp:      time.Date(2003, time.October, 11, 22, 14, 15, 3*10e5, time.UTC),
+			Received:       now,
 			Hostname:       "mymachine.example.com",
 			AppName:        "evntslog",
 			ProcID:         "-",
@@ -94,6 +100,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			Severity:       5,
 			Version:        1,
 			Timestamp:      time.Date(2003, time.October, 11, 22, 14, 15, 3*10e5, time.UTC),
+			Received:       now,
 			Hostname:       "mymachine.example.com",
 			AppName:        "evntslog",
 			ProcID:         "-",
@@ -107,6 +114,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			Severity:       5,
 			Version:        1,
 			Timestamp:      time.Date(2003, time.October, 11, 22, 14, 15, 3*10e5, time.UTC),
+			Received:       now,
 			Hostname:       "mymachine.example.com",
 			AppName:        "evntslog",
 			ProcID:         "-",
@@ -132,6 +140,11 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 		c.Assert(err, IsNil)
 
 		obtained := p.Dump()
+
+		obtainedTime := obtained.Received
+		s.assertTimeIsCloseToNow(c, obtainedTime)
+		obtained.Received = now // XXX: Need to mock out time to test this fully
+
 		c.Assert(obtained, DeepEquals, expected[i])
 	}
 }
@@ -151,7 +164,7 @@ func (s *Rfc5424TestSuite) TestParseHeader_Valid(c *C) {
 	appName := "su"
 	procId := "123"
 	msgId := "ID47"
-	nilValue := string(NILVALUE)
+	nilValue := string(message.NILVALUE)
 	headerFmt := "<165>1 %s %s %s %s %s "
 
 	fixtures := []string{
@@ -190,7 +203,7 @@ func (s *Rfc5424TestSuite) TestParseHeader_Valid(c *C) {
 		header{
 			priority:  pri,
 			version:   1,
-			timestamp: *new(time.Time),
+			timestamp: time.Time{},
 			hostname:  hostname,
 			appName:   appName,
 			procId:    procId,
@@ -897,4 +910,12 @@ func (s *Rfc5424TestSuite) assertParseSdName(c *C, sdData string, b []byte, expC
 	c.Assert(err, Equals, e)
 	c.Assert(obtained, Equals, sdData)
 	c.Assert(cursor, Equals, expC)
+}
+
+func (s *Rfc5424TestSuite) assertTimeIsCloseToNow(c *C, obtainedTime time.Time) {
+	now := time.Now()
+	timeStart := now.Add(-(time.Second * 5))
+	timeEnd := now.Add(time.Second)
+	c.Assert(obtainedTime.After(timeStart), Equals, true)
+	c.Assert(obtainedTime.Before(timeEnd), Equals, true)
 }

@@ -12,10 +12,6 @@ import (
 	"github.com/sleepinggenius2/go-syslog/common/message"
 )
 
-const (
-	NILVALUE = '-'
-)
-
 var (
 	ErrYearInvalid       = &message.ParserError{ErrorString: "Invalid year in timestamp"}
 	ErrMonthInvalid      = &message.ParserError{ErrorString: "Invalid month in timestamp"}
@@ -111,6 +107,7 @@ func (p *Parser) Dump() message.LogParts {
 		Severity:       p.header.priority.S,
 		Version:        p.header.version,
 		Timestamp:      p.header.timestamp,
+		Received:       time.Now(),
 		Hostname:       p.header.hostname,
 		AppName:        p.header.appName,
 		ProcID:         p.header.procId,
@@ -197,7 +194,7 @@ func (p *Parser) parseTimestamp() (time.Time, error) {
 		return ts, ErrInvalidTimeFormat
 	}
 
-	if p.buff[p.cursor] == NILVALUE {
+	if p.buff[p.cursor] == message.NILVALUE {
 		p.cursor++
 		return ts, nil
 	}
@@ -538,7 +535,7 @@ func parseStructuredData(buff []byte, cursor *int, l int) (string, error) {
 		return "-", nil
 	}
 
-	if buff[*cursor] == NILVALUE {
+	if buff[*cursor] == message.NILVALUE {
 		*cursor++
 		return "-", nil
 	}
