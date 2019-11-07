@@ -2,8 +2,6 @@ package transport
 
 import (
 	"fmt"
-	"io"
-	"net"
 	"testing"
 	"time"
 
@@ -33,77 +31,6 @@ func (s *HandlerMock) Handle(logParts format.LogParts, msgLen int64, err error) 
 	s.LastLogParts = logParts
 	s.LastMessageLength = msgLen
 	s.LastError = err
-}
-
-type ConnMock struct {
-	ReadData       []byte
-	ReturnTimeout  bool
-	isClosed       bool
-	isReadDeadline bool
-}
-
-func (c *ConnMock) Read(b []byte) (n int, err error) {
-	if c.ReturnTimeout {
-		return 0, net.UnknownNetworkError("i/o timeout")
-	}
-	if c.ReadData != nil {
-		l := copy(b, c.ReadData)
-		c.ReadData = nil
-		return l, nil
-	}
-	return 0, io.EOF
-}
-
-func (c *ConnMock) Write(b []byte) (n int, err error) {
-	return 0, nil
-}
-
-func (c *ConnMock) Close() error {
-	c.isClosed = true
-	return nil
-}
-
-func (c *ConnMock) LocalAddr() net.Addr {
-	return nil
-}
-
-func (c *ConnMock) RemoteAddr() net.Addr {
-	return nil
-}
-
-func (c *ConnMock) SetDeadline(t time.Time) error {
-	return nil
-}
-
-func (c *ConnMock) SetReadDeadline(t time.Time) error {
-	c.isReadDeadline = true
-	return nil
-}
-
-func (c *ConnMock) SetWriteDeadline(t time.Time) error {
-	return nil
-}
-
-type ListenerMock struct {
-	Conn     net.Conn
-	accepted bool
-}
-
-func (l ListenerMock) Accept() (net.Conn, error) {
-	if l.accepted {
-		return nil, net.UnknownNetworkError("i/o timeout")
-	}
-	time.Sleep(time.Second)
-	l.accepted = true
-	return l.Conn, nil
-}
-
-func (l ListenerMock) Close() error {
-	return nil
-}
-
-func (l ListenerMock) Addr() net.Addr {
-	return nil
 }
 
 func (s *TransportSuite) TestConnectionClose(c *C) {
@@ -149,7 +76,7 @@ func (s *TransportSuite) TestUDP3164(c *C) {
 	handler := new(HandlerMock)
 	udp := NewMockPacketTransport(handler, RFC3164)
 	_ = udp.Listen()
-	udp.SendMessage(PacketMessage{[]byte(exampleSyslog), "0.0.0.0"})
+	udp.SendMessage(exampleSyslog)
 	udp.Wait()
 	c.Check(handler.LastLogParts.Hostname, Equals, "hostname")
 	c.Check(handler.LastLogParts.AppName, Equals, "tag")
@@ -162,7 +89,7 @@ func (s *TransportSuite) TestUDP3164NoTag(c *C) {
 	handler := new(HandlerMock)
 	udp := NewMockPacketTransport(handler, RFC3164)
 	_ = udp.Listen()
-	udp.SendMessage(PacketMessage{[]byte(exampleSyslogNoTSTagHost), "127.0.0.1:45789"})
+	udp.SendMessage(exampleSyslogNoTSTagHost)
 	udp.Wait()
 	c.Check(handler.LastLogParts.Hostname, Equals, "127.0.0.1")
 	c.Check(handler.LastLogParts.AppName, Equals, "")
@@ -175,7 +102,7 @@ func (s *TransportSuite) TestUDPAutomatic3164NoPriority(c *C) {
 	handler := new(HandlerMock)
 	udp := NewMockPacketTransport(handler, Automatic)
 	_ = udp.Listen()
-	udp.SendMessage(PacketMessage{[]byte(exampleSyslogNoPriority), "127.0.0.1:45789"})
+	udp.SendMessage(exampleSyslogNoPriority)
 	udp.Wait()
 	c.Check(handler.LastLogParts.Hostname, Equals, "127.0.0.1")
 	c.Check(handler.LastLogParts.AppName, Equals, "")
@@ -189,8 +116,8 @@ func (s *TransportSuite) TestUDP6587(c *C) {
 	handler := new(HandlerMock)
 	udp := NewMockPacketTransport(handler, RFC6587)
 	_ = udp.Listen()
-	framedSyslog := []byte(fmt.Sprintf("%d %s", len(exampleRFC5424Syslog), exampleRFC5424Syslog))
-	udp.SendMessage(PacketMessage{[]byte(framedSyslog), "0.0.0.0"})
+	framedSyslog := fmt.Sprintf("%d %s", len(exampleRFC5424Syslog), exampleRFC5424Syslog)
+	udp.SendMessage(framedSyslog)
 	udp.Wait()
 	c.Check(handler.LastLogParts.Hostname, Equals, "mymachine.example.com")
 	c.Check(handler.LastLogParts.Facility, Equals, message.FacilityAuth)
@@ -203,7 +130,7 @@ func (s *TransportSuite) TestUDPAutomatic3164(c *C) {
 	handler := new(HandlerMock)
 	udp := NewMockPacketTransport(handler, Automatic)
 	_ = udp.Listen()
-	udp.SendMessage(PacketMessage{[]byte(exampleSyslog), "0.0.0.0"})
+	udp.SendMessage(exampleSyslog)
 	udp.Wait()
 	c.Check(handler.LastLogParts.Hostname, Equals, "hostname")
 	c.Check(handler.LastLogParts.AppName, Equals, "tag")
@@ -216,7 +143,7 @@ func (s *TransportSuite) TestUDPAutomatic5424(c *C) {
 	handler := new(HandlerMock)
 	udp := NewMockPacketTransport(handler, Automatic)
 	_ = udp.Listen()
-	udp.SendMessage(PacketMessage{[]byte(exampleRFC5424Syslog), "0.0.0.0"})
+	udp.SendMessage(exampleRFC5424Syslog)
 	udp.Wait()
 	c.Check(handler.LastLogParts.Hostname, Equals, "mymachine.example.com")
 	c.Check(handler.LastLogParts.Facility, Equals, message.FacilityAuth)
@@ -229,8 +156,8 @@ func (s *TransportSuite) TestUDPAutomatic3164Plus6587OctetCount(c *C) {
 	handler := new(HandlerMock)
 	udp := NewMockPacketTransport(handler, Automatic)
 	_ = udp.Listen()
-	framedSyslog := []byte(fmt.Sprintf("%d %s", len(exampleSyslog), exampleSyslog))
-	udp.SendMessage(PacketMessage{[]byte(framedSyslog), "0.0.0.0"})
+	framedSyslog := fmt.Sprintf("%d %s", len(exampleSyslog), exampleSyslog)
+	udp.SendMessage(framedSyslog)
 	udp.Wait()
 	c.Check(handler.LastLogParts.Hostname, Equals, "hostname")
 	c.Check(handler.LastLogParts.AppName, Equals, "tag")
@@ -243,8 +170,8 @@ func (s *TransportSuite) TestUDPAutomatic5424Plus6587OctetCount(c *C) {
 	handler := new(HandlerMock)
 	udp := NewMockPacketTransport(handler, Automatic)
 	_ = udp.Listen()
-	framedSyslog := []byte(fmt.Sprintf("%d %s", len(exampleRFC5424Syslog), exampleRFC5424Syslog))
-	udp.SendMessage(PacketMessage{[]byte(framedSyslog), "0.0.0.0"})
+	framedSyslog := fmt.Sprintf("%d %s", len(exampleRFC5424Syslog), exampleRFC5424Syslog)
+	udp.SendMessage(framedSyslog)
 	udp.Wait()
 	c.Check(handler.LastLogParts.Hostname, Equals, "mymachine.example.com")
 	c.Check(handler.LastLogParts.Facility, Equals, message.FacilityAuth)

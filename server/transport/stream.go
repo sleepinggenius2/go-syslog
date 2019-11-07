@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"crypto/tls"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/sleepinggenius2/go-syslog/server/format"
@@ -106,8 +105,7 @@ func (t *BaseStreamTransport) goScanConnection(connection net.Conn) {
 		}
 	}
 
-	var scanCloser *ScanCloser
-	scanCloser = &ScanCloser{scanner, connection}
+	scanCloser := &ScanCloser{scanner, connection}
 
 	t.wg.Add(1)
 	go t.scan(scanCloser, client, tlsPeer)
@@ -138,33 +136,5 @@ func (t *BaseStreamTransport) scan(scanCloser *ScanCloser, client string, tlsPee
 func newBaseStreamTransport(addr string, handler Handler, f format.Format) *BaseStreamTransport {
 	return &BaseStreamTransport{
 		BaseTransport: newBaseTransport(addr, handler, f),
-	}
-}
-
-type MockStreamTransport struct {
-	*BaseStreamTransport
-}
-
-func (t *MockStreamTransport) Listen() error {
-	t.wg = new(sync.WaitGroup)
-	conn, err := t.listener.Accept()
-	if err != nil {
-		return err
-	}
-	t.goScanConnection(conn)
-	return nil
-}
-
-func (t *MockStreamTransport) SetListener(listener net.Listener) {
-	t.listener = listener
-}
-
-func (t *MockStreamTransport) Wait() {
-	t.wg.Wait()
-}
-
-func NewMockStreamTransport(handler Handler, f format.Format) *MockStreamTransport {
-	return &MockStreamTransport{
-		BaseStreamTransport: newBaseStreamTransport("", handler, f),
 	}
 }

@@ -105,8 +105,8 @@ func (t *BasePacketTransport) goReceivePackets() {
 				// there has been an error. Either the server has been killed
 				// or may be getting a transitory error due to (e.g.) the
 				// interface being shutdown in which case sleep() to avoid busy wait.
-				opError, ok := err.(*net.OpError)
-				if (ok) && !opError.Temporary() && !opError.Timeout() {
+				netError, ok := err.(net.Error)
+				if (ok) && !netError.Temporary() && !netError.Timeout() {
 					return
 				}
 				time.Sleep(10 * time.Millisecond)
@@ -145,34 +145,5 @@ func newBasePacketTransport(addr string, handler Handler, f format.Format) *Base
 		BaseTransport:     newBaseTransport(addr, handler, f),
 		packetChannelSize: packetChannelSizeDefault,
 		readBufferSize:    packetReadBufferSizeDefault,
-	}
-}
-
-type MockPacketTransport struct {
-	*BasePacketTransport
-}
-
-func (t *MockPacketTransport) Listen() error {
-	t.wg = new(sync.WaitGroup)
-	t.goParsePackets()
-	return nil
-}
-
-func (t *MockPacketTransport) SendMessage(message PacketMessage) {
-	t.packetChannel <- message
-	close(t.packetChannel)
-}
-
-func (t *MockPacketTransport) SetConn(conn PacketConn) {
-	t.conn = conn
-}
-
-func (t *MockPacketTransport) Wait() {
-	t.wg.Wait()
-}
-
-func NewMockPacketTransport(handler Handler, f format.Format) *MockPacketTransport {
-	return &MockPacketTransport{
-		BasePacketTransport: newBasePacketTransport("", handler, f),
 	}
 }

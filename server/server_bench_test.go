@@ -44,41 +44,11 @@ func (s *handlerCounter) Handle(logParts format.LogParts, msgLen int64, err erro
 	}
 }
 
-type fakePacketConn struct {
-	*io.PipeReader
-}
-
-func (c *fakePacketConn) ReadFrom(b []byte) (n int, addr net.Addr, err error) {
-	n, err = c.PipeReader.Read(b)
-	return
-}
-func (c *fakePacketConn) WriteTo(b []byte, addr net.Addr) (n int, err error) {
-	return 0, nil
-}
-func (c *fakePacketConn) Close() error {
-	return nil
-}
-func (c *fakePacketConn) LocalAddr() net.Addr {
-	return nil
-}
-func (c *fakePacketConn) SetDeadline(t time.Time) error {
-	return nil
-}
-func (c *fakePacketConn) SetReadDeadline(t time.Time) error {
-	return nil
-}
-func (c *fakePacketConn) SetWriteDeadline(t time.Time) error {
-	return nil
-}
-func (c *fakePacketConn) SetReadBuffer(bytes int) error {
-	return nil
-}
-
 func BenchmarkDatagramNoFormatting(b *testing.B) {
 	handler := &handlerCounter{expected: b.N, done: make(chan struct{})}
 	reader, writer := io.Pipe()
 	udp := transport.NewMockPacketTransport(handler, noopFormatter{})
-	udp.SetConn(&fakePacketConn{PipeReader: reader})
+	udp.SetConn(&transport.PacketConnMock{PipeReader: reader})
 	server := New(udp)
 	defer func() {
 		err := server.Stop()
@@ -86,7 +56,10 @@ func BenchmarkDatagramNoFormatting(b *testing.B) {
 			panic(err)
 		}
 	}()
-	_ = udp.Listen()
+	err := server.Start()
+	if err != nil {
+		panic(err)
+	}
 	msg := []byte(exampleSyslog + "\n")
 	b.SetBytes(int64(len(msg)))
 	for i := 0; i < b.N; i++ {
