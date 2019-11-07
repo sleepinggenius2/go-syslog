@@ -17,12 +17,13 @@ const (
 
 var packetBufferPool = sync.Pool{
 	New: func() interface{} {
-		return make([]byte, bufio.MaxScanTokenSize)
+		buff := make([]byte, packetReadBufferSizeDefault)
+		return &buff
 	},
 }
 
 type PacketMessage struct {
-	message []byte
+	message *[]byte
 	client  string
 }
 
@@ -84,13 +85,15 @@ func (t *BasePacketTransport) goReceivePackets() {
 			t.wg.Done()
 		}()
 		for {
-			buf := packetBufferPool.Get().([]byte)
-			n, addr, err := t.conn.ReadFrom(buf)
+			buff := packetBufferPool.Get().(*[]byte)
+			n, addr, err := t.conn.ReadFrom(*buff)
 			if err == nil {
-				// Ignore trailing control characters and NULs
-				for ; (n > 0) && (buf[n-1] < 32); n-- {
+				if n == 0 {
+					*buff = (*buff)[:cap(*buff)]
+					packetBufferPool.Put(buff)
 				}
 				if n > 0 {
+					*buff = (*buff)[:n]
 					var address string
 					if addr != nil {
 						address = addr.String()
@@ -98,7 +101,7 @@ func (t *BasePacketTransport) goReceivePackets() {
 					select {
 					case <-t.doneCh:
 						return
-					case t.packetChannel <- PacketMessage{buf[:n], address}:
+					case t.packetChannel <- PacketMessage{buff, address}:
 					}
 				}
 			} else {
@@ -128,13 +131,14 @@ func (t *BasePacketTransport) goParsePackets() {
 				break
 			}
 			if sf := t.format.GetSplitFunc(); sf != nil {
-				if _, token, err := sf(msg.message, true); err == nil {
+				if _, token, err := sf(*msg.message, true); err == nil {
 					t.parser(token, msg.client, "")
 				}
 			} else {
-				t.parser(msg.message, msg.client, "")
+				t.parser(*msg.message, msg.client, "")
 			}
-			packetBufferPool.Put(msg.message[:cap(msg.message)])
+			*msg.message = (*msg.message)[:cap(*msg.message)]
+			packetBufferPool.Put(msg.message)
 		}
 		t.wg.Done()
 	}()
