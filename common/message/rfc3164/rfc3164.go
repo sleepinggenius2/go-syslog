@@ -94,11 +94,12 @@ func (p *Parser) Dump() message.LogParts {
 		Facility:  p.priority.F,
 		Severity:  p.priority.S,
 		Timestamp: p.header.timestamp,
-		Received:  time.Now(),
 		Hostname:  p.header.hostname,
 		AppName:   p.message.tag,
 		ProcID:    p.message.pid,
 		Message:   p.message.content,
+		Received:  time.Now(),
+		Valid:     true,
 	}
 }
 

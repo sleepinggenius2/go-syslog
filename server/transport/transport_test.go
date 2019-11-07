@@ -8,7 +8,6 @@ import (
 	. "gopkg.in/check.v1"
 
 	"github.com/sleepinggenius2/go-syslog/common/message"
-	"github.com/sleepinggenius2/go-syslog/server/format"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -22,12 +21,12 @@ var exampleSyslogNoPriority = "Dec 26 05:08:46 hostname test with no priority - 
 var exampleRFC5424Syslog = "<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su - ID47 - 'su root' failed for lonvick on /dev/pts/8"
 
 type HandlerMock struct {
-	LastLogParts      format.LogParts
+	LastLogParts      message.LogParts
 	LastMessageLength int64
 	LastError         error
 }
 
-func (s *HandlerMock) Handle(logParts format.LogParts, msgLen int64, err error) {
+func (s *HandlerMock) Handle(logParts message.LogParts, msgLen int64, err error) {
 	s.LastLogParts = logParts
 	s.LastMessageLength = msgLen
 	s.LastError = err

@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/sleepinggenius2/go-syslog/common/message"
 	"github.com/sleepinggenius2/go-syslog/common/message/rfc5424"
 )
 
@@ -22,8 +23,8 @@ var (
 
 type RFC5425 struct{}
 
-func (f *RFC5425) GetParser(line []byte) LogParser {
-	return &parserWrapper{rfc5424.NewParser(line)}
+func (f *RFC5425) GetParser(line []byte) message.LogParser {
+	return rfc5424.NewParser(line)
 }
 
 func (f *RFC5425) GetSplitFunc() bufio.SplitFunc {

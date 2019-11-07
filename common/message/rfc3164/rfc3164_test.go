@@ -58,6 +58,7 @@ func (s *Rfc3164TestSuite) TestParser_Valid(c *C) {
 		Priority:  34,
 		Facility:  4,
 		Severity:  2,
+		Valid:     true,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)
@@ -97,6 +98,7 @@ func (s *Rfc3164TestSuite) TestParser_ValidNoTag(c *C) {
 		Priority:  34,
 		Facility:  4,
 		Severity:  2,
+		Valid:     true,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)
@@ -141,6 +143,7 @@ func (s *Rfc3164TestSuite) TestParser_NoTimestamp(c *C) {
 		Priority:  14,
 		Facility:  1,
 		Severity:  6,
+		Valid:     true,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)
@@ -185,6 +188,7 @@ func (s *Rfc3164TestSuite) TestParser_NoPriority(c *C) {
 		Priority:  13,
 		Facility:  1,
 		Severity:  5,
+		Valid:     true,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)
@@ -247,6 +251,7 @@ func (s *Rfc3164TestSuite) TestParser_ValidRFC3339Timestamp(c *C) {
 		Priority:  34,
 		Facility:  4,
 		Severity:  2,
+		Valid:     true,
 	}
 	c.Assert(obtained, DeepEquals, expected)
 }

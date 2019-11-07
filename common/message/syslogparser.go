@@ -67,6 +67,7 @@ type LogParts struct {
 	StructuredData StructuredData
 	Timestamp      time.Time
 	TlsPeer        string
+	Valid          bool
 	Version        int
 }
 

@@ -8,7 +8,7 @@ import (
 
 	. "gopkg.in/check.v1"
 
-	"github.com/sleepinggenius2/go-syslog/server/format"
+	"github.com/sleepinggenius2/go-syslog/common/message"
 	"github.com/sleepinggenius2/go-syslog/server/transport"
 )
 
@@ -55,12 +55,12 @@ func (s *ServerSuite) TestTailFile(c *C) {
 }
 
 type HandlerMock struct {
-	LastLogParts      format.LogParts
+	LastLogParts      message.LogParts
 	LastMessageLength int64
 	LastError         error
 }
 
-func (s *HandlerMock) Handle(logParts format.LogParts, msgLen int64, err error) {
+func (s *HandlerMock) Handle(logParts message.LogParts, msgLen int64, err error) {
 	s.LastLogParts = logParts
 	s.LastMessageLength = msgLen
 	s.LastError = err
@@ -120,7 +120,7 @@ type handlerSlow struct {
 	contents []string
 }
 
-func (s *handlerSlow) Handle(logParts format.LogParts, msgLen int64, err error) {
+func (s *handlerSlow) Handle(logParts message.LogParts, msgLen int64, err error) {
 	if len(s.contents) == 0 {
 		time.Sleep(time.Second)
 	}

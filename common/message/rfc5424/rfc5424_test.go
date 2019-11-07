@@ -51,6 +51,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			MsgID:          "ID47",
 			StructuredData: nil,
 			Message:        "'su root' failed for lonvick on /dev/pts/8",
+			Valid:          true,
 		},
 		message.LogParts{
 			Priority:       165,
@@ -65,6 +66,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			MsgID:          "-",
 			StructuredData: nil,
 			Message:        "%% It's time to make the do-nuts.",
+			Valid:          true,
 		},
 		message.LogParts{
 			Priority:       165,
@@ -79,6 +81,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			MsgID:          "-",
 			StructuredData: nil,
 			Message:        "%% It's time to make the do-nuts.",
+			Valid:          true,
 		},
 		message.LogParts{
 			Priority:  165,
@@ -99,6 +102,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 				},
 			},
 			Message: "An application event log entry...",
+			Valid:   true,
 		},
 		message.LogParts{
 			Priority:  165,
@@ -122,6 +126,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 				},
 			},
 			Message: "",
+			Valid:   true,
 		},
 		message.LogParts{
 			Priority:       165,
@@ -136,6 +141,7 @@ func (s *Rfc5424TestSuite) TestParser_Valid(c *C) {
 			MsgID:          "ID47",
 			StructuredData: nil,
 			Message:        "",
+			Valid:          true,
 		},
 	}
 

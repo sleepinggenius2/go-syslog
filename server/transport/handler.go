@@ -1,15 +1,13 @@
 package transport
 
-import (
-	"github.com/sleepinggenius2/go-syslog/server/format"
-)
+import "github.com/sleepinggenius2/go-syslog/common/message"
 
 // The handler receive every syslog entry at Handle method
 type Handler interface {
-	Handle(logParts format.LogParts, msgLen int64, err error)
+	Handle(logParts message.LogParts, msgLen int64, err error)
 }
 
-type LogPartsChannel chan format.LogParts
+type LogPartsChannel chan message.LogParts
 
 // The ChannelHandler will send all the syslog entries into the given channel
 type ChannelHandler struct {
@@ -27,6 +25,6 @@ func (h *ChannelHandler) SetChannel(channel LogPartsChannel) {
 }
 
 // Syslog entry receiver
-func (h *ChannelHandler) Handle(logParts format.LogParts, messageLength int64, err error) {
+func (h *ChannelHandler) Handle(logParts message.LogParts, messageLength int64, err error) {
 	h.channel <- logParts
 }

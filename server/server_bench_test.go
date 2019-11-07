@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sleepinggenius2/go-syslog/server/format"
+	"github.com/sleepinggenius2/go-syslog/common/message"
 	"github.com/sleepinggenius2/go-syslog/server/transport"
 )
 
@@ -17,13 +17,13 @@ func (noopFormatter) Parse() error {
 	return nil
 }
 
-func (noopFormatter) Dump() format.LogParts {
-	return format.LogParts{}
+func (noopFormatter) Dump() message.LogParts {
+	return message.LogParts{}
 }
 
 func (noopFormatter) Location(*time.Location) {}
 
-func (n noopFormatter) GetParser(l []byte) format.LogParser {
+func (n noopFormatter) GetParser(l []byte) message.LogParser {
 	return n
 }
 
@@ -37,7 +37,7 @@ type handlerCounter struct {
 	done     chan struct{}
 }
 
-func (s *handlerCounter) Handle(logParts format.LogParts, msgLen int64, err error) {
+func (s *handlerCounter) Handle(logParts message.LogParts, msgLen int64, err error) {
 	s.current++
 	if s.current == s.expected {
 		close(s.done)

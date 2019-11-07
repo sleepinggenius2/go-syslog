@@ -110,13 +110,14 @@ func (p *Parser) Dump() message.LogParts {
 		Severity:       p.header.priority.S,
 		Version:        p.header.version,
 		Timestamp:      p.header.timestamp,
-		Received:       time.Now(),
 		Hostname:       p.header.hostname,
 		AppName:        p.header.appName,
 		ProcID:         p.header.procId,
 		MsgID:          p.header.msgId,
 		StructuredData: p.structuredData,
 		Message:        p.message,
+		Received:       time.Now(),
+		Valid:          true,
 	}
 }
 
