@@ -543,6 +543,11 @@ func parseStructuredData(buff []byte, cursor *int, l int) (message.StructuredDat
 		return nil, nil
 	}
 
+	// Empty structured data (not RFC-compliant)
+	if buff[*cursor] == ' ' {
+		return nil, nil
+	}
+
 	// Check that there is a starting open bracket
 	if buff[*cursor] != '[' {
 		return nil, ErrNoStructuredData

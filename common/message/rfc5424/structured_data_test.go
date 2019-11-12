@@ -18,6 +18,7 @@ func TestParseStructuredData(t *testing.T) {
 		wantErr bool
 	}{
 		{"Empty input", args{``}, nil, false},
+		{"Blank input", args{` `}, nil, false},
 		{"Nil STRUCTURED-DATA", args{`-`}, nil, false},
 		{"Invalid STRUCTURED-DATA", args{`a`}, nil, true},
 		{"Invalid Nil STRUCTURED-DATA", args{`-a`}, nil, true},
