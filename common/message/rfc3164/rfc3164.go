@@ -259,7 +259,8 @@ func (p *Parser) parseTag() (string, string, error) {
 			pid = p.buff[pidFrom:p.cursor]
 		}
 
-		if endOfTag {
+		// Support Telco Systems' use of '%' as delimeter on BiNOS
+		if endOfTag || (b == '%' && p.cursor > from) {
 			if !found {
 				tag = p.buff[from:p.cursor]
 			}

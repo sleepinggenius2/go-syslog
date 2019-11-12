@@ -104,8 +104,6 @@ func (s *CommonTestSuite) TestParseVersion_Ok(c *C) {
 }
 
 func (s *CommonTestSuite) TestParseHostname_Invalid(c *C) {
-	// XXX : no year specified. Assumed current year
-	// XXX : no timezone specified. Assume UTC
 	buff := []byte("foo name")
 	start := 0
 	hostname := "foo"
@@ -114,10 +112,16 @@ func (s *CommonTestSuite) TestParseHostname_Invalid(c *C) {
 }
 
 func (s *CommonTestSuite) TestParseHostname_Valid(c *C) {
-	// XXX : no year specified. Assumed current year
-	// XXX : no timezone specified. Assume UTC
 	hostname := "ubuntu11.somehost.com"
 	buff := []byte(hostname + " ")
+	start := 0
+
+	s.assertHostname(c, hostname, buff, start, len(hostname), nil)
+}
+
+func (s *CommonTestSuite) TestParseHostname_Telco(c *C) {
+	hostname := "hostname"
+	buff := []byte(hostname + "%")
 	start := 0
 
 	s.assertHostname(c, hostname, buff, start, len(hostname), nil)

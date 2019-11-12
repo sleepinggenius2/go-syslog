@@ -60,3 +60,16 @@ func (s *FormatSuite) TestRFC3164_CorrectParsingJournald(c *C) {
 	c.Assert(parser.Dump().AppName, Equals, "myprog")
 
 }
+
+func (s *FormatSuite) TestRFC3164_CorrectParsingTelco(c *C) {
+	// Telco Systems uses '%' as the delimeter on BiNOS
+	f := RFC3164{}
+
+	find := `<158>NOV 12 12:56:00 hostname%tTelnetd%Incoming telnet session started`
+	parser := f.GetParser([]byte(find))
+	err := parser.Parse()
+	c.Assert(err, IsNil)
+	c.Assert(parser.Dump().Message, Equals, "Incoming telnet session started")
+	c.Assert(parser.Dump().AppName, Equals, "tTelnetd")
+
+}

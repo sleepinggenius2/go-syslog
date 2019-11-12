@@ -207,7 +207,8 @@ func ParseHostname(buff []byte, cursor *int, l int) (string, error) {
 	var to int
 
 	for to = from; to < l; to++ {
-		if buff[to] == ' ' {
+		// Support Telco Systems' use of '%' as delimeter on BiNOS
+		if buff[to] == ' ' || buff[to] == '%' {
 			break
 		}
 	}
