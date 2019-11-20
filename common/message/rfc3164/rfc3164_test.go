@@ -49,16 +49,17 @@ func (s *Rfc3164TestSuite) TestParser_Valid(c *C) {
 	obtained.Received = now // XXX: Need to mock out time to test this fully
 
 	expected := message.LogParts{
-		Timestamp: time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
-		Received:  now,
-		Hostname:  "mymachine",
-		AppName:   "very.large.syslog.message.tag",
-		ProcID:    "",
-		Message:   "'su root' failed for lonvick on /dev/pts/8",
-		Priority:  34,
-		Facility:  4,
-		Severity:  2,
-		Valid:     true,
+		Timestamp:  time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
+		Received:   now,
+		Hostname:   "mymachine",
+		AppName:    "very.large.syslog.message.tag",
+		ProcID:     "",
+		Message:    "'su root' failed for lonvick on /dev/pts/8",
+		Priority:   34,
+		Facility:   4,
+		Severity:   2,
+		SourceType: "syslog",
+		Valid:      true,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)
@@ -89,16 +90,17 @@ func (s *Rfc3164TestSuite) TestParser_ValidNoTag(c *C) {
 	obtained.Received = now // XXX: Need to mock out time to test this fully
 
 	expected := message.LogParts{
-		Timestamp: time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
-		Received:  now,
-		Hostname:  "mymachine",
-		AppName:   "",
-		ProcID:    "",
-		Message:   "singleword",
-		Priority:  34,
-		Facility:  4,
-		Severity:  2,
-		Valid:     true,
+		Timestamp:  time.Date(now.Year(), time.October, 11, 22, 14, 15, 0, time.UTC),
+		Received:   now,
+		Hostname:   "mymachine",
+		AppName:    "",
+		ProcID:     "",
+		Message:    "singleword",
+		Priority:   34,
+		Facility:   4,
+		Severity:   2,
+		SourceType: "syslog",
+		Valid:      true,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)
@@ -134,16 +136,17 @@ func (s *Rfc3164TestSuite) TestParser_NoTimestamp(c *C) {
 	obtained.Received = now // XXX: Need to mock out time to test this fully
 
 	expected := message.LogParts{
-		Timestamp: now,
-		Received:  now,
-		Hostname:  "",
-		AppName:   "",
-		ProcID:    "",
-		Message:   "INFO     leaving (1) step postscripts",
-		Priority:  14,
-		Facility:  1,
-		Severity:  6,
-		Valid:     true,
+		Timestamp:  now,
+		Received:   now,
+		Hostname:   "",
+		AppName:    "",
+		ProcID:     "",
+		Message:    "INFO     leaving (1) step postscripts",
+		Priority:   14,
+		Facility:   1,
+		Severity:   6,
+		SourceType: "syslog",
+		Valid:      true,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)
@@ -179,16 +182,17 @@ func (s *Rfc3164TestSuite) TestParser_NoPriority(c *C) {
 	obtained.Received = now // XXX: Need to mock out time to test this fully
 
 	expected := message.LogParts{
-		Timestamp: now,
-		Received:  now,
-		Hostname:  "",
-		AppName:   "",
-		ProcID:    "",
-		Message:   "Oct 11 22:14:15 Testing no priority",
-		Priority:  13,
-		Facility:  1,
-		Severity:  5,
-		Valid:     true,
+		Timestamp:  now,
+		Received:   now,
+		Hostname:   "",
+		AppName:    "",
+		ProcID:     "",
+		Message:    "Oct 11 22:14:15 Testing no priority",
+		Priority:   13,
+		Facility:   1,
+		Severity:   5,
+		SourceType: "syslog",
+		Valid:      true,
 	}
 
 	c.Assert(obtained, DeepEquals, expected)
@@ -242,16 +246,17 @@ func (s *Rfc3164TestSuite) TestParser_ValidRFC3339Timestamp(c *C) {
 	obtained.Received = now // XXX: Need to mock out time to test this fully
 
 	expected := message.LogParts{
-		Timestamp: time.Date(2018, time.January, 12, 22, 14, 15, 0, time.UTC),
-		Received:  now,
-		Hostname:  "mymachine",
-		AppName:   "app",
-		ProcID:    "101",
-		Message:   "msg",
-		Priority:  34,
-		Facility:  4,
-		Severity:  2,
-		Valid:     true,
+		Timestamp:  time.Date(2018, time.January, 12, 22, 14, 15, 0, time.UTC),
+		Received:   now,
+		Hostname:   "mymachine",
+		AppName:    "app",
+		ProcID:     "101",
+		Message:    "msg",
+		Priority:   34,
+		Facility:   4,
+		Severity:   2,
+		SourceType: "syslog",
+		Valid:      true,
 	}
 	c.Assert(obtained, DeepEquals, expected)
 }
@@ -415,13 +420,13 @@ func (s *Rfc3164TestSuite) BenchmarkParseHeader(c *C) {
 	}
 }
 
-func (s *Rfc3164TestSuite) BenchmarkParsemessage(c *C) {
+func (s *Rfc3164TestSuite) BenchmarkParseMessage(c *C) {
 	buff := []byte("sometag[123]: foo bar baz blah quux")
 
 	p := NewParser(buff)
 
 	for i := 0; i < c.N; i++ {
-		_, err := p.parsemessage()
+		_, err := p.parseMessage()
 		if err != message.ErrEOL {
 			panic(err)
 		}
@@ -457,7 +462,7 @@ func (s *Rfc3164TestSuite) assertRfc3164Header(c *C, hdr header, b []byte, expC 
 
 func (s *Rfc3164TestSuite) assertRfc3164message(c *C, msg rfc3164message, b []byte, expC int, e error) {
 	p := NewParser(b)
-	obtained, err := p.parsemessage()
+	obtained, err := p.parseMessage()
 	c.Assert(err, Equals, e)
 	c.Assert(obtained, Equals, msg)
 	c.Assert(p.cursor, Equals, expC)

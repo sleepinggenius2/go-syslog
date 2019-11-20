@@ -120,8 +120,8 @@ func (s *CommonTestSuite) TestParseHostname_Valid(c *C) {
 }
 
 func (s *CommonTestSuite) TestParseHostname_Telco(c *C) {
-	hostname := "hostname"
-	buff := []byte(hostname + "%")
+	hostname := "hostname%"
+	buff := []byte(hostname)
 	start := 0
 
 	s.assertHostname(c, hostname, buff, start, len(hostname), nil)

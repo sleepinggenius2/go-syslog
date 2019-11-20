@@ -15,22 +15,6 @@ import (
 	"github.com/sleepinggenius2/go-syslog/common/message"
 )
 
-var (
-	ErrYearInvalid       = &message.ParserError{ErrorString: "Invalid year in timestamp"}
-	ErrMonthInvalid      = &message.ParserError{ErrorString: "Invalid month in timestamp"}
-	ErrDayInvalid        = &message.ParserError{ErrorString: "Invalid day in timestamp"}
-	ErrHourInvalid       = &message.ParserError{ErrorString: "Invalid hour in timestamp"}
-	ErrMinuteInvalid     = &message.ParserError{ErrorString: "Invalid minute in timestamp"}
-	ErrSecondInvalid     = &message.ParserError{ErrorString: "Invalid second in timestamp"}
-	ErrSecFracInvalid    = &message.ParserError{ErrorString: "Invalid fraction of second in timestamp"}
-	ErrTimeZoneInvalid   = &message.ParserError{ErrorString: "Invalid time zone in timestamp"}
-	ErrInvalidTimeFormat = &message.ParserError{ErrorString: "Invalid time format"}
-	ErrInvalidAppName    = &message.ParserError{ErrorString: "Invalid app name"}
-	ErrInvalidProcId     = &message.ParserError{ErrorString: "Invalid proc ID"}
-	ErrInvalidMsgId      = &message.ParserError{ErrorString: "Invalid msg ID"}
-	ErrNoStructuredData  = &message.ParserError{ErrorString: "No structured data"}
-)
-
 type Parser struct {
 	buff           []byte
 	cursor         int
@@ -38,6 +22,7 @@ type Parser struct {
 	header         header
 	structuredData message.StructuredData
 	message        string
+	sourceType     string
 }
 
 type header struct {
@@ -104,7 +89,7 @@ func (p *Parser) Parse() error {
 }
 
 func (p *Parser) Dump() message.LogParts {
-	return message.LogParts{
+	parts := message.LogParts{
 		Priority:       p.header.priority.P,
 		Facility:       p.header.priority.F,
 		Severity:       p.header.priority.S,
@@ -119,6 +104,12 @@ func (p *Parser) Dump() message.LogParts {
 		Received:       time.Now(),
 		Valid:          true,
 	}
+	if p.sourceType != "" {
+		parts.SourceType = p.sourceType
+	} else {
+		parts.SourceType = "rfc5424_syslog"
+	}
+	return parts
 }
 
 // HEADER = PRI VERSION SP TIMESTAMP SP HOSTNAME SP APP-NAME SP PROCID SP MSGID
@@ -195,7 +186,7 @@ func (p *Parser) parseTimestamp() (time.Time, error) {
 	var ts time.Time
 
 	if p.cursor >= p.l {
-		return ts, ErrInvalidTimeFormat
+		return ts, message.ErrInvalidTimeFormat
 	}
 
 	if p.buff[p.cursor] == message.NILVALUE {
@@ -209,7 +200,7 @@ func (p *Parser) parseTimestamp() (time.Time, error) {
 	}
 
 	if p.cursor >= p.l || p.buff[p.cursor] != 'T' {
-		return ts, ErrInvalidTimeFormat
+		return ts, message.ErrInvalidTimeFormat
 	}
 
 	p.cursor++
@@ -245,17 +236,17 @@ func (p *Parser) parseHostname() (string, error) {
 
 // APP-NAME = NILVALUE / 1*48PRINTUSASCII
 func (p *Parser) parseAppName() (string, error) {
-	return parseUpToLen(p.buff, &p.cursor, p.l, 48, ErrInvalidAppName)
+	return parseUpToLen(p.buff, &p.cursor, p.l, 48, message.ErrInvalidAppName)
 }
 
 // PROCID = NILVALUE / 1*128PRINTUSASCII
 func (p *Parser) parseProcId() (string, error) {
-	return parseUpToLen(p.buff, &p.cursor, p.l, 128, ErrInvalidProcId)
+	return parseUpToLen(p.buff, &p.cursor, p.l, 128, message.ErrInvalidProcId)
 }
 
 // MSGID = NILVALUE / 1*32PRINTUSASCII
 func (p *Parser) parseMsgId() (string, error) {
-	return parseUpToLen(p.buff, &p.cursor, p.l, 32, ErrInvalidMsgId)
+	return parseUpToLen(p.buff, &p.cursor, p.l, 32, message.ErrInvalidMsgId)
 }
 
 func (p *Parser) parseStructuredData() (message.StructuredData, error) {
@@ -324,7 +315,7 @@ func parseYear(buff []byte, cursor *int, l int) (int, error) {
 
 	year, err := strconv.Atoi(sub)
 	if err != nil {
-		return 0, ErrYearInvalid
+		return 0, message.ErrYearInvalid
 	}
 
 	return year, nil
@@ -332,7 +323,7 @@ func parseYear(buff []byte, cursor *int, l int) (int, error) {
 
 // DATE-MONTH = 2DIGIT  ; 01-12
 func parseMonth(buff []byte, cursor *int, l int) (int, error) {
-	return message.Parse2Digits(buff, cursor, l, 1, 12, ErrMonthInvalid)
+	return message.Parse2Digits(buff, cursor, l, 1, 12, message.ErrMonthInvalid)
 }
 
 // DATE-MDAY = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on month/year
@@ -341,7 +332,7 @@ func parseDay(buff []byte, cursor *int, l int) (int, error) {
 	// XXX : we do not check if valid regarding February or leap years
 	// XXX : we only checks that day is in range [01 -> 31]
 	// XXX : in other words this function will not rant if you provide Feb 31th
-	return message.Parse2Digits(buff, cursor, l, 1, 31, ErrDayInvalid)
+	return message.Parse2Digits(buff, cursor, l, 1, 31, message.ErrDayInvalid)
 }
 
 // FULL-TIME = PARTIAL-TIME TIME-OFFSET
@@ -376,7 +367,7 @@ func parsePartialTime(buff []byte, cursor *int, l int) (partialTime, error) {
 	}
 
 	if *cursor >= l || buff[*cursor] != ':' {
-		return pt, ErrInvalidTimeFormat
+		return pt, message.ErrInvalidTimeFormat
 	}
 
 	*cursor++
@@ -413,17 +404,17 @@ func parsePartialTime(buff []byte, cursor *int, l int) (partialTime, error) {
 
 // TIME-HOUR = 2DIGIT  ; 00-23
 func parseHour(buff []byte, cursor *int, l int) (int, error) {
-	return message.Parse2Digits(buff, cursor, l, 0, 23, ErrHourInvalid)
+	return message.Parse2Digits(buff, cursor, l, 0, 23, message.ErrHourInvalid)
 }
 
 // TIME-MINUTE = 2DIGIT  ; 00-59
 func parseMinute(buff []byte, cursor *int, l int) (int, error) {
-	return message.Parse2Digits(buff, cursor, l, 0, 59, ErrMinuteInvalid)
+	return message.Parse2Digits(buff, cursor, l, 0, 59, message.ErrMinuteInvalid)
 }
 
 // TIME-SECOND = 2DIGIT  ; 00-59
 func parseSecond(buff []byte, cursor *int, l int) (int, error) {
-	return message.Parse2Digits(buff, cursor, l, 0, 59, ErrSecondInvalid)
+	return message.Parse2Digits(buff, cursor, l, 0, 59, message.ErrSecondInvalid)
 }
 
 // TIME-SECFRAC = "." 1*6DIGIT
@@ -447,13 +438,13 @@ func parseSecFrac(buff []byte, cursor *int, l int) (float64, error) {
 
 	sub := string(buff[from:to])
 	if len(sub) == 0 {
-		return 0, ErrSecFracInvalid
+		return 0, message.ErrSecFracInvalid
 	}
 
 	secFrac, err := strconv.ParseFloat("0."+sub, 64)
 	*cursor = to
 	if err != nil {
-		return 0, ErrSecFracInvalid
+		return 0, message.ErrSecFracInvalid
 	}
 
 	return secFrac, nil
@@ -477,7 +468,7 @@ func parseNumericalTimeOffset(buff []byte, cursor *int, l int) (*time.Location, 
 	sign := buff[*cursor]
 
 	if (sign != '+') && (sign != '-') {
-		return loc, ErrTimeZoneInvalid
+		return loc, message.ErrTimeZoneInvalid
 	}
 
 	*cursor++
@@ -503,7 +494,7 @@ func getHourMinute(buff []byte, cursor *int, l int) (int, int, error) {
 	}
 
 	if *cursor >= l || buff[*cursor] != ':' {
-		return 0, 0, ErrInvalidTimeFormat
+		return 0, 0, message.ErrInvalidTimeFormat
 	}
 
 	*cursor++
@@ -538,19 +529,19 @@ func parseStructuredData(buff []byte, cursor *int, l int) (message.StructuredDat
 	if buff[*cursor] == message.NILVALUE {
 		*cursor++
 		if *cursor < l && buff[*cursor] != ' ' {
-			return nil, ErrNoStructuredData
+			return nil, message.ErrNoStructuredData
 		}
 		return nil, nil
 	}
 
-	// Empty structured data (not RFC-compliant)
+	// Empty structured data (not RFC-compliant, but Telco Systems BiNOX does this)
 	if buff[*cursor] == ' ' {
 		return nil, nil
 	}
 
 	// Check that there is a starting open bracket
 	if buff[*cursor] != '[' {
-		return nil, ErrNoStructuredData
+		return nil, message.ErrNoStructuredData
 	}
 
 	out := make(message.StructuredData)

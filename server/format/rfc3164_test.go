@@ -61,6 +61,19 @@ func (s *FormatSuite) TestRFC3164_CorrectParsingJournald(c *C) {
 
 }
 
+func (s *FormatSuite) TestRFC3164_CorrectParsingCisco(c *C) {
+	// Cisco implementation of syslog is weird
+	f := RFC3164{}
+
+	find := `<189>571: hostname: Nov  8 13:53:12.226: %SYS-5-CONFIG_I: Configured from console by admin on vty0 (192.0.2.1)`
+	parser := f.GetParser([]byte(find))
+	err := parser.Parse()
+	c.Assert(err, IsNil)
+	c.Assert(parser.Dump().Message, Equals, "%SYS-5-CONFIG_I: Configured from console by admin on vty0 (192.0.2.1)")
+	c.Assert(parser.Dump().AppName, Equals, "")
+
+}
+
 func (s *FormatSuite) TestRFC3164_CorrectParsingTelco(c *C) {
 	// Telco Systems uses '%' as the delimeter on BiNOS
 	f := RFC3164{}

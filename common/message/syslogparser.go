@@ -31,6 +31,20 @@ var (
 	ErrTimestampUnknownFormat = &ParserError{"Timestamp format unknown"}
 
 	ErrHostnameTooShort = &ParserError{"Hostname field too short"}
+
+	ErrYearInvalid       = &ParserError{"Invalid year in timestamp"}
+	ErrMonthInvalid      = &ParserError{"Invalid month in timestamp"}
+	ErrDayInvalid        = &ParserError{"Invalid day in timestamp"}
+	ErrHourInvalid       = &ParserError{"Invalid hour in timestamp"}
+	ErrMinuteInvalid     = &ParserError{"Invalid minute in timestamp"}
+	ErrSecondInvalid     = &ParserError{"Invalid second in timestamp"}
+	ErrSecFracInvalid    = &ParserError{"Invalid fraction of second in timestamp"}
+	ErrTimeZoneInvalid   = &ParserError{"Invalid time zone in timestamp"}
+	ErrInvalidTimeFormat = &ParserError{"Invalid time format"}
+	ErrInvalidAppName    = &ParserError{"Invalid app name"}
+	ErrInvalidProcId     = &ParserError{"Invalid proc ID"}
+	ErrInvalidMsgId      = &ParserError{"Invalid msg ID"}
+	ErrNoStructuredData  = &ParserError{"No structured data"}
 )
 
 type LogParser interface {
@@ -54,21 +68,24 @@ type SDParams map[string]string
 type StructuredData map[SDID]SDParams
 
 type LogParts struct {
-	AppName        string
-	Client         string
-	Facility       Facility
-	Hostname       string
-	Message        string
-	MsgID          string
+	// Syslog fields
 	Priority       int
-	ProcID         string
-	Received       time.Time
+	Facility       Facility
 	Severity       Severity
-	StructuredData StructuredData
-	Timestamp      time.Time
-	TlsPeer        string
-	Valid          bool
 	Version        int
+	Timestamp      time.Time
+	Hostname       string
+	AppName        string
+	ProcID         string
+	MsgID          string
+	StructuredData StructuredData
+	Message        string
+	// Additional metadata
+	Client     string
+	Received   time.Time
+	SourceType string
+	TlsPeer    string
+	Valid      bool
 }
 
 // https://tools.ietf.org/html/rfc3164#section-4.1
@@ -208,7 +225,11 @@ func ParseHostname(buff []byte, cursor *int, l int) (string, error) {
 
 	for to = from; to < l; to++ {
 		// Support Telco Systems' use of '%' as delimeter on BiNOS
-		if buff[to] == ' ' || buff[to] == '%' {
+		if buff[to] == ' ' {
+			break
+		}
+		if buff[to] == '%' {
+			to++
 			break
 		}
 	}

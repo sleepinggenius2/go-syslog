@@ -9,15 +9,18 @@ import (
 )
 
 type Parser struct {
-	buff     []byte
-	cursor   int
-	l        int
-	priority message.Priority
-	version  int
-	header   header
-	message  rfc3164message
-	location *time.Location
-	skipTag  bool
+	buff       []byte
+	cursor     int
+	l          int
+	priority   message.Priority
+	version    int
+	header     header
+	message    rfc3164message
+	location   *time.Location
+	skipTag    bool
+	sourceType string
+	cisco      *ciscoMetadata
+	ciena      *cienaMetadata
 }
 
 type header struct {
@@ -60,8 +63,16 @@ func (p *Parser) Parse() error {
 		return nil
 	}
 
+	var hdr header
 	tcursor = p.cursor
-	hdr, err := p.parseHeader()
+	seqId := p.parseCiscoSequenceId()
+	if seqId == "" {
+		hdr, err = p.parseHeader()
+	} else {
+		p.cisco = &ciscoMetadata{seqId: seqId}
+		hdr, err = p.parseCiscoHeader()
+	}
+
 	if err == message.ErrTimestampUnknownFormat {
 		// RFC3164 sec 4.3.2.
 		hdr.timestamp = time.Now().Round(time.Second)
@@ -69,13 +80,17 @@ func (p *Parser) Parse() error {
 		p.skipTag = true
 		// Reset cursor for content read
 		p.cursor = tcursor
+		// Reset Cisco metadata, as the message is not properly formatted
+		p.cisco = nil
 	} else if err != nil {
 		return err
-	} else {
+	}
+
+	if p.cursor < p.l && p.buff[p.cursor] == ' ' {
 		p.cursor++
 	}
 
-	msg, err := p.parsemessage()
+	msg, err := p.parseMessage()
 	if err != message.ErrEOL {
 		return err
 	}
@@ -88,8 +103,15 @@ func (p *Parser) Parse() error {
 	return nil
 }
 
+func boolToString(b bool) string {
+	if b {
+		return "1"
+	}
+	return "0"
+}
+
 func (p *Parser) Dump() message.LogParts {
-	return message.LogParts{
+	parts := message.LogParts{
 		Priority:  p.priority.P,
 		Facility:  p.priority.F,
 		Severity:  p.priority.S,
@@ -101,6 +123,44 @@ func (p *Parser) Dump() message.LogParts {
 		Received:  time.Now(),
 		Valid:     true,
 	}
+	if p.cisco != nil {
+		if p.cisco.facility == "ASA" {
+			parts.SourceType = "cisco:asa"
+		} else {
+			parts.SourceType = "cisco:ios"
+		}
+		parts.StructuredData = message.StructuredData{
+			"timeQuality": message.SDParams{"isSynced": boolToString(!p.cisco.notSynced)},
+		}
+		if p.cisco.seqId != "" {
+			parts.StructuredData["meta"] = message.SDParams{"sequenceId": p.cisco.seqId}
+		}
+		parts.StructuredData["syslog@9"] = message.SDParams{
+			"facility":    p.cisco.facility,
+			"severity_id": p.cisco.severity_id,
+			"mnemonic":    p.cisco.mnemonic,
+		}
+		if p.cisco.category != "" {
+			parts.StructuredData["syslog@9"]["category"] = p.cisco.category
+		}
+		if p.cisco.subfacility != "" {
+			parts.StructuredData["syslog@9"]["subfacility"] = p.cisco.subfacility
+		}
+		if p.cisco.source != "" {
+			parts.StructuredData["syslog@9"]["node_id"] = p.cisco.source
+		}
+	} else if p.ciena != nil {
+		parts.SourceType = "ciena:saos"
+		parts.StructuredData = message.StructuredData{
+			"origin":      message.SDParams{"ip": p.ciena.mgmtIp},
+			"syslog@6141": message.SDParams{"base_mac": p.ciena.baseMac},
+		}
+	} else if p.sourceType != "" {
+		parts.SourceType = p.sourceType
+	} else {
+		parts.SourceType = "syslog"
+	}
+	return parts
 }
 
 func (p *Parser) parsePriority() (message.Priority, error) {
@@ -121,13 +181,31 @@ func (p *Parser) parseHeader() (header, error) {
 		return hdr, err
 	}
 
+	// This should be a Ciena SAOS device
+	if hostname == "[local]" || hostname == "[UTC]" {
+		if hostname == "[UTC]" {
+			ts = time.Date(ts.Year(), ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), ts.Nanosecond(), time.UTC)
+		}
+		if p.cursor < p.l && p.buff[p.cursor] == ' ' {
+			p.cursor++
+		}
+		hostname, err = p.parseCienaHostname()
+		if err != nil {
+			return hdr, err
+		}
+	} else if len(hostname) > 0 && hostname[len(hostname)-1] == '%' {
+		// This should be a Telco Systems BiNOS device
+		p.sourceType = "telco:binos"
+		hostname = hostname[:len(hostname)-1]
+	}
+
 	hdr.timestamp = ts
 	hdr.hostname = hostname
 
 	return hdr, nil
 }
 
-func (p *Parser) parsemessage() (rfc3164message, error) {
+func (p *Parser) parseMessage() (rfc3164message, error) {
 	msg := rfc3164message{}
 	var err error
 
@@ -138,6 +216,10 @@ func (p *Parser) parsemessage() (rfc3164message, error) {
 		}
 		msg.tag = tag
 		msg.pid = pid
+	}
+
+	if p.cisco != nil {
+		p.parseCiscoSystemMessage()
 	}
 
 	content, err := p.parseContent()
@@ -288,7 +370,7 @@ func (p *Parser) parseContent() (string, error) {
 		return "", message.ErrEOL
 	}
 
-	content := bytes.Trim(p.buff[p.cursor:p.l], " ")
+	content := bytes.Trim(p.buff[p.cursor:p.l], " \000")
 	p.cursor += len(content)
 
 	return string(content), message.ErrEOL
