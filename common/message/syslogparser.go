@@ -67,6 +67,11 @@ type SDID string
 type SDParams map[string]string
 type StructuredData map[SDID]SDParams
 
+type Client struct {
+	Host string
+	Port string
+}
+
 type LogParts struct {
 	// Syslog fields
 	Priority       int
@@ -81,7 +86,7 @@ type LogParts struct {
 	StructuredData StructuredData
 	Message        string
 	// Additional metadata
-	Client     string
+	Client     Client
 	Received   time.Time
 	SourceType string
 	TlsPeer    string

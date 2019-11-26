@@ -85,14 +85,22 @@ func (t BaseTransport) parser(line []byte, client string, tlsPeer string) {
 
 	err := parser.Parse()
 	logParts := parser.Dump()
-	logParts.Client = client
-	if logParts.Hostname == "" {
-		logParts.Hostname, _, err = net.SplitHostPort(client)
+	if err == nil {
+		host, port, err := net.SplitHostPort(client)
 		if err != nil {
-			logParts.Hostname = client
+			logParts.Client.Host = client
+			if logParts.Hostname == "" {
+				logParts.Hostname = client
+			}
+		} else {
+			logParts.Client.Host = host
+			logParts.Client.Port = port
+			if logParts.Hostname == "" {
+				logParts.Hostname = host
+			}
 		}
+		logParts.TlsPeer = tlsPeer
 	}
-	logParts.TlsPeer = tlsPeer
 
 	t.handler.Handle(logParts, int64(len(line)), err)
 }
