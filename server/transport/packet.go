@@ -144,9 +144,9 @@ func (t *BasePacketTransport) goParsePackets() {
 	}()
 }
 
-func newBasePacketTransport(addr string, handler Handler, f format.Format) *BasePacketTransport {
+func newBasePacketTransport(network string, addr string, handler Handler, f format.Format) *BasePacketTransport {
 	return &BasePacketTransport{
-		BaseTransport:     newBaseTransport(addr, handler, f),
+		BaseTransport:     newBaseTransport(network, addr, handler, f),
 		packetChannelSize: packetChannelSizeDefault,
 		readBufferSize:    packetReadBufferSizeDefault,
 	}

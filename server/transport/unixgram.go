@@ -33,6 +33,6 @@ func (t *UnixgramTransport) Listen() error {
 
 func NewUnixgram(addr string, handler Handler) *UnixgramTransport {
 	return &UnixgramTransport{
-		BasePacketTransport: newBasePacketTransport(addr, handler, Automatic),
+		BasePacketTransport: newBasePacketTransport("unixgram", addr, handler, Automatic),
 	}
 }

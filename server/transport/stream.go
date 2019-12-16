@@ -133,8 +133,8 @@ func (t *BaseStreamTransport) scan(scanCloser *ScanCloser, client string, tlsPee
 	}
 }
 
-func newBaseStreamTransport(addr string, handler Handler, f format.Format) *BaseStreamTransport {
+func newBaseStreamTransport(network string, addr string, handler Handler, f format.Format) *BaseStreamTransport {
 	return &BaseStreamTransport{
-		BaseTransport: newBaseTransport(addr, handler, f),
+		BaseTransport: newBaseTransport(network, addr, handler, f),
 	}
 }

@@ -104,7 +104,7 @@ func (t *MockStreamTransport) Wait() {
 
 func NewMockStreamTransport(handler Handler, f format.Format) *MockStreamTransport {
 	return &MockStreamTransport{
-		BaseStreamTransport: newBaseStreamTransport("", handler, f),
+		BaseStreamTransport: newBaseStreamTransport("", "", handler, f),
 	}
 }
 
@@ -189,6 +189,6 @@ func (t *MockPacketTransport) Wait() {
 
 func NewMockPacketTransport(handler Handler, f format.Format) *MockPacketTransport {
 	return &MockPacketTransport{
-		BasePacketTransport: newBasePacketTransport("", handler, f),
+		BasePacketTransport: newBasePacketTransport("", "", handler, f),
 	}
 }

@@ -33,6 +33,6 @@ func (t *UDPTransport) Listen() error {
 
 func NewUDP(addr string, handler Handler) *UDPTransport {
 	return &UDPTransport{
-		BasePacketTransport: newBasePacketTransport(addr, handler, Automatic),
+		BasePacketTransport: newBasePacketTransport("udp", addr, handler, Automatic),
 	}
 }

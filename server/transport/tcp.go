@@ -27,5 +27,5 @@ func (t *TCPTransport) Listen() error {
 }
 
 func NewTCP(addr string, handler Handler) *TCPTransport {
-	return &TCPTransport{BaseStreamTransport: newBaseStreamTransport(addr, handler, Automatic)}
+	return &TCPTransport{BaseStreamTransport: newBaseStreamTransport("tcp", addr, handler, Automatic)}
 }

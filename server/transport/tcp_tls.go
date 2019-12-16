@@ -29,7 +29,7 @@ func (t *TCPTLSTransport) Listen() error {
 
 func NewTCPTLS(addr string, handler Handler, config *tls.Config) *TCPTLSTransport {
 	return &TCPTLSTransport{
-		BaseStreamTransport: newBaseStreamTransport(addr, handler, RFC5425),
+		BaseStreamTransport: newBaseStreamTransport("tcp+tls", addr, handler, RFC5425),
 		config:              config,
 	}
 }

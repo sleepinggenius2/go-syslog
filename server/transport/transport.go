@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sleepinggenius2/go-syslog/common/message"
 	"github.com/sleepinggenius2/go-syslog/server/format"
 )
 
@@ -45,6 +46,7 @@ type BaseTransport struct {
 	format   format.Format
 	handler  Handler
 	location *time.Location
+	network  string
 	wg       *sync.WaitGroup
 }
 
@@ -100,15 +102,18 @@ func (t BaseTransport) parser(line []byte, client string, tlsPeer string) {
 			}
 		}
 		logParts.TlsPeer = tlsPeer
+		logParts.Transport = message.Transport{Network: t.network, Address: t.addr}
 	}
 
 	t.handler.Handle(logParts, int64(len(line)), err)
 }
 
-func newBaseTransport(addr string, handler Handler, f format.Format) *BaseTransport {
-	return &BaseTransport{
+func newBaseTransport(network string, addr string, handler Handler, f format.Format) *BaseTransport {
+	t := &BaseTransport{
 		addr:    addr,
 		format:  f,
 		handler: handler,
+		network: network,
 	}
+	return t
 }

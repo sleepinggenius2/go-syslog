@@ -72,6 +72,15 @@ type Client struct {
 	Port string
 }
 
+type Transport struct {
+	Network string
+	Address string
+}
+
+func (t Transport) String() string {
+	return t.Network + ":" + t.Address
+}
+
 type LogParts struct {
 	// Syslog fields
 	Priority       int
@@ -90,6 +99,7 @@ type LogParts struct {
 	Received   time.Time
 	SourceType string
 	TlsPeer    string
+	Transport  Transport
 	Valid      bool
 }
 
