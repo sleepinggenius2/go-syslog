@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sleepinggenius2/go-syslog/common/message"
+	"github.com/sleepinggenius2/go-syslog/common/message/rfc5424"
 )
 
 type Parser struct {
@@ -21,6 +22,7 @@ type Parser struct {
 	sourceType string
 	cisco      *ciscoMetadata
 	ciena      *cienaMetadata
+	brocade    message.StructuredData
 }
 
 type header struct {
@@ -155,6 +157,9 @@ func (p *Parser) Dump() message.LogParts {
 			"origin":      message.SDParams{"ip": p.ciena.mgmtIp},
 			"syslog@6141": message.SDParams{"base_mac": p.ciena.baseMac},
 		}
+	} else if p.brocade != nil {
+		parts.SourceType = "brocade"
+		parts.StructuredData = p.brocade
 	} else if p.sourceType != "" {
 		parts.SourceType = p.sourceType
 	} else {
@@ -220,6 +225,16 @@ func (p *Parser) parseMessage() (rfc3164message, error) {
 
 	if p.cisco != nil {
 		p.parseCiscoSystemMessage()
+	}
+
+	if msg.tag == "raslogd" {
+		cursor := p.cursor
+		sd, err := rfc5424.ParseStructuredData(p.buff, &p.cursor, p.l)
+		if err != nil {
+			p.cursor = cursor
+		} else {
+			p.brocade = sd
+		}
 	}
 
 	content, err := p.parseContent()

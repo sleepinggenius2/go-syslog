@@ -953,7 +953,7 @@ func (s *Rfc5424TestSuite) assertParseMsgId(c *C, msgId string, b []byte, expC i
 
 func (s *Rfc5424TestSuite) assertParseSdName(c *C, sdData message.StructuredData, b []byte, expC int, e error) {
 	cursor := 0
-	obtained, err := parseStructuredData(b, &cursor, len(b))
+	obtained, err := ParseStructuredData(b, &cursor, len(b))
 
 	c.Assert(err, Equals, e)
 	c.Assert(obtained, DeepEquals, sdData)

@@ -250,7 +250,7 @@ func (p *Parser) parseMsgId() (string, error) {
 }
 
 func (p *Parser) parseStructuredData() (message.StructuredData, error) {
-	return parseStructuredData(p.buff, &p.cursor, p.l)
+	return ParseStructuredData(p.buff, &p.cursor, p.l)
 }
 
 // ----------------------------------------------
@@ -519,7 +519,7 @@ func toNSec(sec float64) (int, error) {
 }
 
 // https://tools.ietf.org/html/rfc5424#section-6.3
-func parseStructuredData(buff []byte, cursor *int, l int) (message.StructuredData, error) {
+func ParseStructuredData(buff []byte, cursor *int, l int) (message.StructuredData, error) {
 	// No more data
 	if *cursor >= l {
 		return nil, nil

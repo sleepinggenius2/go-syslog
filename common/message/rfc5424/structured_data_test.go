@@ -68,7 +68,7 @@ func TestParseStructuredData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var cursor int
-			got, err := parseStructuredData([]byte(tt.args.buff), &cursor, len(tt.args.buff))
+			got, err := ParseStructuredData([]byte(tt.args.buff), &cursor, len(tt.args.buff))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseStructuredData() error = %v, wantErr %v", err, tt.wantErr)
 				return
