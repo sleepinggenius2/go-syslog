@@ -46,6 +46,7 @@ type BaseTransport struct {
 	format   format.Format
 	handler  Handler
 	location *time.Location
+	metrics  *Metrics
 	network  string
 	wg       *sync.WaitGroup
 }
@@ -105,7 +106,9 @@ func (t BaseTransport) parser(line []byte, client string, tlsPeer string) {
 		logParts.Transport = message.Transport{Network: t.network, Address: t.addr}
 	}
 
-	t.handler.Handle(logParts, int64(len(line)), err)
+	msgLen := int64(len(line))
+	t.setMetrics(logParts, msgLen, err)
+	t.handler.Handle(logParts, msgLen, err)
 }
 
 func newBaseTransport(network string, addr string, handler Handler, f format.Format) *BaseTransport {
@@ -114,6 +117,9 @@ func newBaseTransport(network string, addr string, handler Handler, f format.For
 		format:  f,
 		handler: handler,
 		network: network,
+	}
+	if network != "" {
+		t.addMetrics()
 	}
 	return t
 }
