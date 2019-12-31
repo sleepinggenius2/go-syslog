@@ -181,6 +181,15 @@ func (p *Parser) parseHeader() (header, error) {
 		return hdr, err
 	}
 
+	// We might have a Cisco message without a sequence ID
+	if p.cisco == nil && p.cursor+3 < p.l && string(p.buff[p.cursor:p.cursor+3]) == ": %" {
+		p.cursor++
+		p.skipTag = true
+		p.cisco = new(ciscoMetadata)
+		hdr.timestamp = ts
+		return hdr, nil
+	}
+
 	hostname, err := p.parseHostname()
 	if err != nil {
 		return hdr, err
@@ -257,6 +266,7 @@ func (p *Parser) parseTimestamp() (time.Time, error) {
 	tsFmts := []string{
 		time.Stamp,
 		time.RFC3339,
+		"Jan _2 2006 15:04:05",
 	}
 	// if timestamps starts with numeric try formats with different order
 	// it is more likely that timestamp is in RFC3339 format then
@@ -264,6 +274,7 @@ func (p *Parser) parseTimestamp() (time.Time, error) {
 		tsFmts = []string{
 			time.RFC3339,
 			time.Stamp,
+			"Jan _2 2006 15:04:05",
 		}
 	}
 

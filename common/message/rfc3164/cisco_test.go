@@ -57,6 +57,24 @@ func TestParser_Parse(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			"Without sequence ID",
+			`<190>Jan 02 2006 22:04:05: %SYS-5-CONFIG_I: Configured from console by admin on vty0 (192.0.2.1)`,
+			message.LogParts{
+				Priority:  190,
+				Facility:  message.FacilityLocal7,
+				Severity:  message.SeverityInfo,
+				Timestamp: time.Date(2006, time.January, 2, 22, 4, 5, 0, time.UTC),
+				StructuredData: message.StructuredData{
+					"timeQuality": message.SDParams{"isSynced": "1"},
+					"syslog@9":    message.SDParams{"facility": "SYS", "mnemonic": "CONFIG_I", "severity_id": "5"},
+				},
+				Message:    `%SYS-5-CONFIG_I: Configured from console by admin on vty0 (192.0.2.1)`,
+				SourceType: "cisco:ios",
+				Valid:      true,
+			},
+			false,
+		},
+		{
 			"Without hostname",
 			`<190>123: Jan 02 2006 22:04:05: %SYS-5-CONFIG_I: Configured from console by admin on vty0 (192.0.2.1)`,
 			message.LogParts{
