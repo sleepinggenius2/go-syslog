@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	dto "github.com/prometheus/client_model/go"
+
 	"github.com/sleepinggenius2/go-syslog/common/message"
 	"github.com/sleepinggenius2/go-syslog/server/format"
 )
@@ -34,6 +36,7 @@ type Transport interface {
 	GetHandler() Handler
 	GetLocation() *time.Location
 	Listen() error
+	LoadMetrics(map[string]*dto.MetricFamily)
 	SetFormat(f format.Format)
 	SetHandler(handler Handler)
 	SetLocation(*time.Location)

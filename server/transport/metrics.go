@@ -3,6 +3,8 @@ package transport
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	dto "github.com/prometheus/client_model/go"
+
 	"github.com/sleepinggenius2/go-syslog/common/message"
 )
 
@@ -47,7 +49,7 @@ func (t *BaseTransport) addMetrics() {
 	}
 }
 
-func (t BaseTransport) setMetrics(logParts message.LogParts, msgLen int64, err error) {
+func (t *BaseTransport) setMetrics(logParts message.LogParts, msgLen int64, err error) {
 	if t.metrics == nil {
 		return
 	}
@@ -58,5 +60,33 @@ func (t BaseTransport) setMetrics(logParts message.LogParts, msgLen int64, err e
 	t.metrics.MessagesReceived.With(labels).Inc()
 	if err != nil {
 		t.metrics.MessagesErrored.With(labels).Inc()
+	}
+}
+
+func (t *BaseTransport) LoadMetrics(metrics map[string]*dto.MetricFamily) {
+	metricsMap := map[string]*prometheus.CounterVec{
+		"errored":  t.metrics.MessagesErrored,
+		"received": t.metrics.MessagesReceived,
+	}
+	for k, v := range metricsMap {
+		totals := metrics["syslog_transport_messages_"+k+"_total"]
+		if totals == nil || totals.GetType() != dto.MetricType_COUNTER {
+			continue
+		}
+		for _, metric := range totals.GetMetric() {
+			labels := metric.GetLabel()
+			if len(labels) != 2 || labels[0] == nil || labels[1] == nil {
+				continue
+			}
+			if labels[0].GetName() == "transport" && labels[0].GetValue() == t.network+":"+t.addr {
+				if labels[1].GetName() == "client" {
+					v.With(prometheus.Labels{"client": labels[1].GetValue()}).Add(metric.Counter.GetValue())
+				}
+			} else if labels[1].GetName() == "transport" && labels[1].GetValue() == t.network+":"+t.addr {
+				if labels[0].GetName() == "client" {
+					v.With(prometheus.Labels{"client": labels[0].GetValue()}).Add(metric.Counter.GetValue())
+				}
+			}
+		}
 	}
 }
