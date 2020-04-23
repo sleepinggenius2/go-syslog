@@ -473,10 +473,7 @@ func parseFullTime(buff []byte, cursor *int, l int) (fullTime, error) {
 		}
 	}
 
-	ft.loc, err = time.LoadLocation(string(buff[from:to]))
-	if err != nil {
-		return ft, err
-	}
+	ft.loc = getTimezone(string(buff[from:to]))
 	*cursor = to + 1
 
 	return ft, nil
